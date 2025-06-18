@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Hunger Games – Free Roam</title>
+  <title>Hunger Games AI</title>
   <style>
     body{font-family:Arial,Helvetica,sans-serif;max-width:800px;margin:2rem auto;line-height:1.6}
     #stats{margin-bottom:1rem}
     progress{width:100%;height:1rem}
-    .choice{margin:.4rem 0;cursor:pointer;color:steelblue}
+    .choice{margin:.35rem 0;cursor:pointer;color:steelblue}
     .choice:hover{text-decoration:underline}
     #cmdArea{margin-top:1.2rem}
     #cmdInput{width:70%}
@@ -16,25 +16,20 @@
   </style>
 </head>
 <body>
-  <h1>Hunger Games – Free Roam</h1>
-
+  <h1>Hunger Games Adventure</h1>
   <div id="stats">
-    <div>Health&nbsp;<progress id="bar-health"  value="100" max="100"></progress></div>
-    <div>Stamina&nbsp;<progress id="bar-stamina" value="100" max="100"></progress></div>
-    <div>Hunger&nbsp;&nbsp;<progress id="bar-hunger"  value="0"   max="100"></progress></div>
-    <div>Day&nbsp;<span id="dayLabel">1</span> &bullet; Time&nbsp;<span id="timeLabel">Morning</span></div>
+    <div><strong>Name:</strong> <span id="charName"></span></div>
+    <div><strong>District:</strong> <span id="charDistrict"></span></div>
+    <div><strong>Age:</strong> <span id="charAge"></span></div>
+    <div><strong>Health:</strong> <progress id="health" value="100" max="100"></progress></div>
   </div>
-
-  <div id="story"></div>
-
+  <div id="storyContainer"></div>
+  <div id="choices"></div>
   <div id="cmdArea">
-    <input id="cmdInput" placeholder="Type an action (e.g., search water)"/>
-    <button id="cmdBtn">Do</button>
-    <button id="hintBtn">Hint?</button>
+    <input type="text" id="cmdInput" placeholder="Type an action..." />
+    <button id="hintBtn">Hint</button>
   </div>
-
   <div id="sponsor"></div>
-
   <script src="ink.js"></script>
   <script src="main.js"></script>
 </body>
