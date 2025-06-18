@@ -5,9 +5,12 @@ async function start() {
   const storyContent = await fetch("story.json").then(r => r.json());
   story = new inkjs.Story(storyContent);
 
-  // Bind Ink function after story is ready
+  // Force story to begin at the "intro" knot
+  story.ChoosePathString("intro");
+
+  // Bind external command function
   story.BindExternalFunction("bridge_prompt", () => {
-    const cmd = prompt("Type an action (e.g. search water, hide, attack, talk, rest):");
+    const cmd = prompt("Type an action (e.g. search water, hide, attack):");
     return cmd ? cmd.toLowerCase() : "";
   });
 
@@ -47,18 +50,29 @@ function updateStats() {
   document.getElementById("health").value = charData.health;
 }
 
-// Optional: Track command box (for now, just shows typed commands)
 document.getElementById("cmdInput").addEventListener("keypress", e => {
   if (e.key === "Enter") {
-    document.getElementById("sponsor").style.display = "block";
-    document.getElementById("sponsor").innerText = `You tried: "${e.target.value}". Nothing happened... yet.`;
+    const cmd = e.target.value.trim();
+    const sponsorBox = document.getElementById("sponsor");
+
+    sponsorBox.style.display = "block";
+
+    if (cmd === "") {
+      sponsorBox.innerText = "You didn't type anything.";
+    } else if (/jump|run|hide|search|attack|talk|look|listen|drink|eat/.test(cmd)) {
+      sponsorBox.innerText = `You tried: "${cmd}". Let's see what happens...`;
+    } else {
+      sponsorBox.innerText = `You tried: "${cmd}". Nothing happened... yet.`;
+    }
+
     e.target.value = "";
   }
 });
 
 document.getElementById("hintBtn").onclick = () => {
-  document.getElementById("sponsor").style.display = "block";
-  document.getElementById("sponsor").innerText = "The AI whispers: Stay hidden near the riverbank.";
+  const sponsorBox = document.getElementById("sponsor");
+  sponsorBox.style.display = "block";
+  sponsorBox.innerText = "The AI whispers: Stay hidden near the riverbank and listen for movement.";
 };
 
 window.onload = start;
