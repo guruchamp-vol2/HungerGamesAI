@@ -1,5 +1,5 @@
 let story;
-let charData = { name: "", age: 0, district: "", health: 100 };
+let charData = { name: "", age: 0, district: "", health: 100, weapon: "", inventory: "" };
 
 async function start() {
   const storyContent = await fetch("story.json").then(r => r.json());
@@ -9,9 +9,9 @@ async function start() {
   story.ChoosePathString("intro");
 
   // Bind external function for command input
-  story.BindExternalFunction("bridge_prompt", () => {
-    const cmd = prompt("Type an action (e.g. search water, hide, attack):");
-    return cmd ? cmd.toLowerCase() : "";
+  story.BindExternalFunction("bridge_prompt", (promptText) => {
+    const userInput = prompt(promptText || "Enter your response:");
+    return userInput ? userInput : "";
   });
 
   continueStory();
@@ -50,21 +50,63 @@ function updateStats() {
   document.getElementById("health").value = charData.health;
 }
 
+// GPT-powered free roam handler
+async function handleFreeRoamAction(action) {
+  try {
+    // Update character data from story variables
+    charData.name = story.variablesState["name"] || "";
+    charData.district = story.variablesState["district"] || "";
+    charData.age = story.variablesState["age"] || 0;
+    charData.health = story.variablesState["health"] || 100;
+    charData.weapon = story.variablesState["weapon"] || "";
+    charData.inventory = story.variablesState["inventory"] || "";
+    charData.trainingScore = story.variablesState["training_score"] || 0;
+    charData.sponsorPoints = story.variablesState["sponsor_points"] || 0;
+
+    const storyContext = "You are in the Hunger Games arena. The Games have begun and you must survive. Other tributes are hunting, and the arena is full of dangers and opportunities.";
+
+    const response = await fetch('/api/free-roam', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: action,
+        playerStats: charData,
+        storyContext: storyContext
+      })
+    });
+
+    const data = await response.json();
+    
+    // Set the GPT response in the story
+    story.variablesState["gpt_response"] = data.response;
+    
+    // Continue the story
+    continueStory();
+  } catch (error) {
+    console.error('Error calling GPT API:', error);
+    story.variablesState["gpt_response"] = "You try the action, but something unexpected happens. The arena is full of surprises.";
+    continueStory();
+  }
+}
+
 document.getElementById("cmdInput").addEventListener("keypress", e => {
   if (e.key === "Enter") {
-    const cmd = e.target.value.trim();
-    const sponsorBox = document.getElementById("sponsor");
-
-    sponsorBox.style.display = "block";
-
-    if (cmd === "") {
-      sponsorBox.innerText = "You didn't type anything.";
-    } else if (/jump|run|hide|search|attack|talk|look|listen|drink|eat/.test(cmd)) {
-      sponsorBox.innerText = `You tried: "${cmd}". Let's see what happens...`;
-    } else {
-      sponsorBox.innerText = `You tried: "${cmd}". Nothing happened... yet.`;
+    const cmd = e.target.value.trim().toLowerCase();
+    if (cmd) {
+      story.variablesState["action"] = cmd;
+      
+      // Check if it's a predefined action or needs GPT
+      const predefinedActions = ["search water", "hide", "attack", "eat", "run to the woods"];
+      if (predefinedActions.includes(cmd)) {
+        // Use predefined response
+        continueStory();
+      } else {
+        // Use GPT for unknown actions
+        handleFreeRoamAction(cmd);
+      }
     }
-
     e.target.value = "";
   }
 });
