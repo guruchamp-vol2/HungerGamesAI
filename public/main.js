@@ -184,14 +184,6 @@ function showCheatHint() {
     }, 8000);
 }
 
-// Test function for cheat code
-function testCheatCode() {
-    console.log('Testing cheat code...');
-    cheatActive = true;
-    cheatSequence = '';
-    showCheatHint();
-}
-
 // Initialize the application
 window.addEventListener('load', async () => {
     // Check authentication first
