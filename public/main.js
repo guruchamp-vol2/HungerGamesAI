@@ -244,6 +244,8 @@ function updateUserDisplay() {
 async function loadStory() {
     try {
         console.log('Loading story.json...');
+        
+        // Try to fetch the story file
         const response = await fetch('story.json');
         console.log('Story fetch response status:', response.status);
         
@@ -254,30 +256,44 @@ async function loadStory() {
         const storyContent = await response.json();
         console.log('Story content loaded successfully:', storyContent);
         
+        // Validate story structure
+        if (!storyContent.inkVersion || !storyContent.root || !storyContent.knots) {
+            throw new Error('Invalid story format: missing required fields');
+        }
+        
         story = new inkjs.Story(storyContent);
         console.log('Ink story created successfully');
         
         // Initialize story variables if they don't exist
         if (story.variablesState) {
-            story.variablesState["health"] = story.variablesState["health"] || 100;
-            story.variablesState["stamina"] = story.variablesState["stamina"] || 100;
-            story.variablesState["hunger"] = story.variablesState["hunger"] || 0;
-            story.variablesState["strength"] = story.variablesState["strength"] || 0;
-            story.variablesState["knowledge"] = story.variablesState["knowledge"] || 0;
-            story.variablesState["awareness"] = story.variablesState["awareness"] || 0;
-            story.variablesState["agility"] = story.variablesState["agility"] || 0;
-            story.variablesState["stealth"] = story.variablesState["stealth"] || 0;
-            story.variablesState["idle"] = story.variablesState["idle"] || 0;
-            story.variablesState["name"] = story.variablesState["name"] || "";
-            story.variablesState["age"] = story.variablesState["age"] || 0;
-            story.variablesState["district"] = story.variablesState["district"] || "";
-            story.variablesState["weapon"] = story.variablesState["weapon"] || "";
-            story.variablesState["inventory"] = story.variablesState["inventory"] || "";
-            story.variablesState["specialty"] = story.variablesState["specialty"] || "";
-            story.variablesState["gpt_response"] = story.variablesState["gpt_response"] || "";
-            story.variablesState["sponsor_points"] = story.variablesState["sponsor_points"] || 0;
-            story.variablesState["training_score"] = story.variablesState["training_score"] || 0;
-            story.variablesState["instawin"] = story.variablesState["instawin"] || false;
+            const defaultVariables = {
+                "health": 100,
+                "stamina": 100,
+                "hunger": 0,
+                "strength": 0,
+                "knowledge": 0,
+                "awareness": 0,
+                "agility": 0,
+                "stealth": 0,
+                "idle": 0,
+                "name": "",
+                "age": 0,
+                "district": "",
+                "weapon": "",
+                "inventory": "",
+                "specialty": "",
+                "gpt_response": "",
+                "sponsor_points": 0,
+                "training_score": 0,
+                "instawin": false
+            };
+            
+            // Set default values for all variables
+            Object.keys(defaultVariables).forEach(key => {
+                if (story.variablesState[key] === undefined) {
+                    story.variablesState[key] = defaultVariables[key];
+                }
+            });
         }
         console.log('Story variables initialized');
         
@@ -287,7 +303,72 @@ async function loadStory() {
         
     } catch (error) {
         console.error('Error loading story:', error);
-        document.getElementById('storyContainer').innerHTML = '<p style="color: #ff6b6b;">Error loading story. Please refresh the page.</p>';
+        
+        // Show detailed error message
+        const storyContainer = document.getElementById('storyContainer');
+        storyContainer.innerHTML = `
+            <div style="color: #ff6b6b; text-align: center; padding: 20px;">
+                <h3>Story Loading Error</h3>
+                <p>Error: ${error.message}</p>
+                <p>Please refresh the page or try again later.</p>
+                <button onclick="location.reload()" style="
+                    background: #ff6b6b;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    margin-top: 10px;
+                ">Refresh Page</button>
+            </div>
+        `;
+        
+        // Try to create a minimal story as fallback
+        try {
+            console.log('Attempting to create fallback story...');
+            const fallbackStory = {
+                inkVersion: 20,
+                root: [{
+                    "#n": "intro",
+                    "c": [{
+                        "#f": 1,
+                        "c": ["Welcome to Panem. The Capitol watches. The Districts remember.\n\nBefore we begin, let's get to know you.\n\nWhat is your name?\n"]
+                    }, {
+                        "#n": "g-0",
+                        "c": [{
+                            "#f": 2,
+                            "c": ["Enter your name"]
+                        }]
+                    }]
+                }],
+                listDefs: {},
+                variables: [],
+                knots: {
+                    "intro": {
+                        "c": [{
+                            "#f": 1,
+                            "c": ["Welcome to Panem. The Capitol watches. The Districts remember.\n\nBefore we begin, let's get to know you.\n\nWhat is your name?\n"]
+                        }, {
+                            "#n": "g-0",
+                            "c": [{
+                                "#f": 2,
+                                "c": ["Enter your name"]
+                            }]
+                        }]
+                    }
+                }
+            };
+            
+            story = new inkjs.Story(fallbackStory);
+            console.log('Fallback story created successfully');
+            
+            // Clear error message and start fallback story
+            storyContainer.innerHTML = '';
+            continueStory();
+            
+        } catch (fallbackError) {
+            console.error('Fallback story creation failed:', fallbackError);
+        }
     }
 }
 

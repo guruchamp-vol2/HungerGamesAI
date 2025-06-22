@@ -465,7 +465,19 @@ app.get('/auth.html', (req, res) => {
 
 // Serve story.json explicitly
 app.get('/story.json', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'story.json'));
+    try {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.sendFile(path.join(__dirname, 'public', 'story.json'), (err) => {
+            if (err) {
+                console.error('Error serving story.json:', err);
+                res.status(404).json({ error: 'Story file not found' });
+            }
+        });
+    } catch (error) {
+        console.error('Error serving story.json:', error);
+        res.status(500).json({ error: 'Failed to serve story file' });
+    }
 });
 
 // Start server

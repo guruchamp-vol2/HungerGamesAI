@@ -25,7 +25,84 @@
     }
   ],
   "listDefs": {},
-  "variables": [],
+  "variables": [
+    {
+      "name": "health",
+      "value": 100
+    },
+    {
+      "name": "stamina",
+      "value": 100
+    },
+    {
+      "name": "hunger",
+      "value": 0
+    },
+    {
+      "name": "strength",
+      "value": 0
+    },
+    {
+      "name": "knowledge",
+      "value": 0
+    },
+    {
+      "name": "awareness",
+      "value": 0
+    },
+    {
+      "name": "agility",
+      "value": 0
+    },
+    {
+      "name": "stealth",
+      "value": 0
+    },
+    {
+      "name": "idle",
+      "value": 0
+    },
+    {
+      "name": "name",
+      "value": ""
+    },
+    {
+      "name": "age",
+      "value": 0
+    },
+    {
+      "name": "district",
+      "value": ""
+    },
+    {
+      "name": "weapon",
+      "value": ""
+    },
+    {
+      "name": "inventory",
+      "value": ""
+    },
+    {
+      "name": "specialty",
+      "value": ""
+    },
+    {
+      "name": "gpt_response",
+      "value": ""
+    },
+    {
+      "name": "sponsor_points",
+      "value": 0
+    },
+    {
+      "name": "training_score",
+      "value": 0
+    },
+    {
+      "name": "instawin",
+      "value": false
+    }
+  ],
   "knots": {
     "intro": {
       "c": [
