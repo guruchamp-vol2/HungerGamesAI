@@ -104,14 +104,21 @@ app.post('/api/login', async (req, res) => {
             return res.status(400).json({ error: 'Username and password are required' });
         }
 
+        console.log(`Login attempt for username: ${username}`);
+
         // Get user
         const user = await userDB.getUserByUsername(username);
         if (!user) {
+            console.log(`User '${username}' not found in database`);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
+        console.log(`User '${username}' found, ID: ${user.id}`);
+
         // Check password
         const validPassword = await bcrypt.compare(password, user.password_hash);
+        console.log(`Password validation for '${username}': ${validPassword ? 'PASS' : 'FAIL'}`);
+        
         if (!validPassword) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
@@ -121,6 +128,8 @@ app.post('/api/login', async (req, res) => {
 
         // Generate JWT token
         const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
+
+        console.log(`Login successful for '${username}'`);
 
         res.json({
             message: 'Login successful',
@@ -360,6 +369,28 @@ app.get('/api/leaderboard', async (req, res) => {
     } catch (error) {
         console.error('Get leaderboard error:', error);
         res.status(500).json({ error: 'Failed to get leaderboard' });
+    }
+});
+
+// Admin route to check if user exists (for debugging)
+app.get('/api/admin/check-user/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const user = await userDB.getUserByUsername(username);
+        
+        if (user) {
+            res.json({ 
+                exists: true, 
+                id: user.id, 
+                username: user.username,
+                created_at: user.created_at 
+            });
+        } else {
+            res.json({ exists: false });
+        }
+    } catch (error) {
+        console.error('Check user error:', error);
+        res.status(500).json({ error: 'Failed to check user' });
     }
 });
 
