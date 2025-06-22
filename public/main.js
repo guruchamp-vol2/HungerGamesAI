@@ -25,9 +25,10 @@ const konamiCode = [
 ];
 let konamiIndex = 0;
 let cheatActive = false;
+let cheatSequence = '';
 
 window.addEventListener('keydown', (e) => {
-    // Don't trigger on input fields
+    // Don't trigger on input fields for Konami code
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
         return;
     }
@@ -38,6 +39,7 @@ window.addEventListener('keydown', (e) => {
         if (konamiIndex === konamiCode.length) {
             cheatActive = true;
             konamiIndex = 0;
+            cheatSequence = ''; // Reset text sequence
             console.log('Cheat code activated! Type "Iamdevwin" to win.');
             showCheatHint();
         }
@@ -46,18 +48,40 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// Add global cheat code detection for typing "Iamdevwin"
+// Global cheat code detection for typing "Iamdevwin"
 window.addEventListener('keydown', (e) => {
-    // Only check if cheat is active and not in input field
-    if (cheatActive && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-        // Check if user is typing "Iamdevwin"
-        if (e.key === 'I' || e.key === 'i') {
-            checkCheatSequence('Iamdevwin', e);
+    // Only check if cheat is active
+    if (cheatActive) {
+        // Allow typing in input fields for cheat code
+        const key = e.key.toLowerCase();
+        
+        // Check if it's a letter or number
+        if (/[a-z0-9]/.test(key)) {
+            cheatSequence += key;
+            console.log(`Cheat sequence: ${cheatSequence}`);
+            
+            if (cheatSequence === 'iamdevwin') {
+                console.log('CHEAT WIN ACTIVATED!');
+                activateCheatWin();
+                cheatSequence = '';
+                cheatActive = false;
+            } else if (!'iamdevwin'.startsWith(cheatSequence)) {
+                // Reset if sequence doesn't match
+                cheatSequence = '';
+            }
+        } else if (e.key === 'Backspace') {
+            // Allow backspace to correct typing
+            cheatSequence = cheatSequence.slice(0, -1);
+            console.log(`Cheat sequence (backspace): ${cheatSequence}`);
+        } else if (e.key === 'Escape') {
+            // Allow escape to cancel
+            cheatSequence = '';
+            cheatActive = false;
+            console.log('Cheat code cancelled');
         }
     }
 });
 
-let cheatSequence = '';
 function checkCheatSequence(target, event) {
     cheatSequence += event.key.toLowerCase();
     console.log(`Cheat sequence: ${cheatSequence}`);
@@ -173,11 +197,11 @@ function showCheatHint() {
 
 // Initialize the application
 window.addEventListener('load', async () => {
-    // Wait a bit for scripts to load
-    await waitForInkjs();
-    
-    // Check authentication
+    // Check authentication first
     await checkAuthentication();
+    
+    // Wait for inkjs with shorter timeout
+    await waitForInkjs();
     
     // Load the story
     await loadStory();
@@ -197,11 +221,11 @@ window.addEventListener('load', async () => {
 // Wait for inkjs to be available
 async function waitForInkjs() {
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 5; // Reduced from 10 to 5
     
     while (typeof inkjs === 'undefined' && attempts < maxAttempts) {
         console.log(`Waiting for inkjs to load... attempt ${attempts + 1}/${maxAttempts}`);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 300)); // Reduced from 500ms to 300ms
         attempts++;
     }
     
@@ -214,6 +238,18 @@ async function waitForInkjs() {
 
 // Check authentication status
 async function checkAuthentication() {
+    // First try to get user from localStorage
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+        try {
+            currentUser = JSON.parse(storedUser);
+            console.log('Found stored user:', currentUser.username);
+        } catch (error) {
+            console.error('Error parsing stored user:', error);
+            localStorage.removeItem('currentUser');
+        }
+    }
+    
     if (authToken) {
         try {
             const response = await fetch('/api/profile', {
@@ -225,24 +261,35 @@ async function checkAuthentication() {
             if (response.ok) {
                 const data = await response.json();
                 currentUser = data.user;
+                // Update localStorage with fresh user data
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 updateUserDisplay();
+                console.log('User authenticated:', currentUser.username);
             } else {
                 // Token invalid, clear it
                 localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
                 authToken = null;
                 currentUser = { id: 'guest', username: 'Guest Player' };
                 updateUserDisplay();
+                console.log('Token invalid, switched to guest mode');
             }
         } catch (error) {
             console.error('Authentication check failed:', error);
             localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
             authToken = null;
             currentUser = { id: 'guest', username: 'Guest Player' };
             updateUserDisplay();
+            console.log('Auth check failed, switched to guest mode');
         }
     } else {
-        currentUser = { id: 'guest', username: 'Guest Player' };
+        // No auth token, use stored user or default to guest
+        if (!currentUser) {
+            currentUser = { id: 'guest', username: 'Guest Player' };
+        }
         updateUserDisplay();
+        console.log('No auth token, using:', currentUser.username);
     }
 }
 
@@ -258,6 +305,7 @@ function updateUserDisplay() {
         } else {
             userStatusElement.textContent = 'Ready to enter the arena';
         }
+        console.log('User display updated:', currentUser.username);
     }
 }
 
