@@ -52,13 +52,13 @@ window.addEventListener('keydown', (e) => {
     if (cheatActive && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
         // Check if user is typing "Iamdevwin"
         if (e.key === 'I' || e.key === 'i') {
-            checkCheatSequence('Iamdevwin');
+            checkCheatSequence('Iamdevwin', e);
         }
     }
 });
 
 let cheatSequence = '';
-function checkCheatSequence(target) {
+function checkCheatSequence(target, event) {
     cheatSequence += event.key.toLowerCase();
     console.log(`Cheat sequence: ${cheatSequence}`);
     
@@ -169,13 +169,6 @@ function showCheatHint() {
             }, 300);
         }
     }, 8000);
-}
-
-// Debug function to test cheat code (for development)
-function debugCheatCode() {
-    console.log('Debug: Activating cheat code...');
-    cheatActive = true;
-    showCheatHint();
 }
 
 // Initialize the application
