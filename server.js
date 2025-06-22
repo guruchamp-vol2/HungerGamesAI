@@ -1,26 +1,295 @@
 const express = require('express');
-const OpenAI = require('openai');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const session = require('express-session');
+const bodyParser = require('body-parser');
+const path = require('path');
+require('dotenv').config();
+
+const { initializeDatabase, userDB, saveDB, feedbackDB, statsDB } = require('./database');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize OpenAI (you'll need to set OPENAI_API_KEY environment variable)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'your-api-key-here'
+// JWT secret (in production, use a strong secret from environment variables)
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.static('public'));
+app.use(session({
+    secret: JWT_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false } // Set to true in production with HTTPS
+}));
+
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'Access token required' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// Initialize database
+initializeDatabase().then(() => {
+    console.log('Database initialized successfully');
+}).catch(err => {
+    console.error('Database initialization failed:', err);
 });
 
-app.use(express.static('public'));
-app.use(express.json());
+// OpenAI configuration
+const OpenAI = require('openai');
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
+// Authentication routes
+app.post('/api/register', async (req, res) => {
+    try {
+        const { username, password, email } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password are required' });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+        }
+
+        // Check if user already exists
+        const existingUser = await userDB.getUserByUsername(username);
+        if (existingUser) {
+            return res.status(400).json({ error: 'Username already exists' });
+        }
+
+        // Hash password
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        // Create user
+        const user = await userDB.createUser(username, passwordHash, email);
+
+        // Generate JWT token
+        const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
+
+        res.json({
+            message: 'User registered successfully',
+            token,
+            user: { id: user.id, username: user.username }
+        });
+
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ error: 'Registration failed' });
+    }
+});
+
+app.post('/api/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password are required' });
+        }
+
+        // Get user
+        const user = await userDB.getUserByUsername(username);
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Check password
+        const validPassword = await bcrypt.compare(password, user.password_hash);
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Update last login
+        await userDB.updateLastLogin(user.id);
+
+        // Generate JWT token
+        const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
+
+        res.json({
+            message: 'Login successful',
+            token,
+            user: { id: user.id, username: user.username }
+        });
+
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+// User profile route
+app.get('/api/profile', authenticateToken, async (req, res) => {
+    try {
+        const user = await userDB.getUserById(req.user.userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json({ user });
+    } catch (error) {
+        console.error('Profile error:', error);
+        res.status(500).json({ error: 'Failed to get profile' });
+    }
+});
+
+// Save game routes
+app.post('/api/saves', authenticateToken, async (req, res) => {
+    try {
+        const { saveName, storyState, characterData } = req.body;
+
+        if (!saveName || !storyState || !characterData) {
+            return res.status(400).json({ error: 'Save name, story state, and character data are required' });
+        }
+
+        const save = await saveDB.createSave(req.user.userId, saveName, storyState, characterData);
+        res.json({ message: 'Save created successfully', save });
+    } catch (error) {
+        console.error('Create save error:', error);
+        if (error.message.includes('UNIQUE constraint failed')) {
+            res.status(400).json({ error: 'Save name already exists' });
+        } else {
+            res.status(500).json({ error: 'Failed to create save' });
+        }
+    }
+});
+
+app.get('/api/saves', authenticateToken, async (req, res) => {
+    try {
+        const saves = await saveDB.getUserSaves(req.user.userId);
+        res.json({ saves });
+    } catch (error) {
+        console.error('Get saves error:', error);
+        res.status(500).json({ error: 'Failed to get saves' });
+    }
+});
+
+app.get('/api/saves/:saveId', authenticateToken, async (req, res) => {
+    try {
+        const save = await saveDB.getSaveById(req.params.saveId, req.user.userId);
+        if (!save) {
+            return res.status(404).json({ error: 'Save not found' });
+        }
+        res.json({ save });
+    } catch (error) {
+        console.error('Get save error:', error);
+        res.status(500).json({ error: 'Failed to get save' });
+    }
+});
+
+app.put('/api/saves/:saveId', authenticateToken, async (req, res) => {
+    try {
+        const { storyState, characterData } = req.body;
+
+        if (!storyState || !characterData) {
+            return res.status(400).json({ error: 'Story state and character data are required' });
+        }
+
+        await saveDB.updateSave(req.params.saveId, storyState, characterData);
+        res.json({ message: 'Save updated successfully' });
+    } catch (error) {
+        console.error('Update save error:', error);
+        res.status(500).json({ error: 'Failed to update save' });
+    }
+});
+
+app.delete('/api/saves/:saveId', authenticateToken, async (req, res) => {
+    try {
+        await saveDB.deleteSave(req.params.saveId, req.user.userId);
+        res.json({ message: 'Save deleted successfully' });
+    } catch (error) {
+        console.error('Delete save error:', error);
+        res.status(500).json({ error: 'Failed to delete save' });
+    }
+});
+
+// Feedback routes
+app.post('/api/feedback', async (req, res) => {
+    try {
+        const { subject, message, rating, username } = req.body;
+
+        if (!subject || !message) {
+            return res.status(400).json({ error: 'Subject and message are required' });
+        }
+
+        let userId = null;
+        if (req.headers['authorization']) {
+            try {
+                const token = req.headers['authorization'].split(' ')[1];
+                const decoded = jwt.verify(token, JWT_SECRET);
+                userId = decoded.userId;
+            } catch (err) {
+                // Token invalid, continue as anonymous
+            }
+        }
+
+        const feedback = await feedbackDB.submitFeedback(userId, username, subject, message, rating);
+        res.json({ message: 'Feedback submitted successfully', feedback });
+    } catch (error) {
+        console.error('Submit feedback error:', error);
+        res.status(500).json({ error: 'Failed to submit feedback' });
+    }
+});
+
+app.get('/api/feedback', async (req, res) => {
+    try {
+        const feedback = await feedbackDB.getFeedback();
+        res.json({ feedback });
+    } catch (error) {
+        console.error('Get feedback error:', error);
+        res.status(500).json({ error: 'Failed to get feedback' });
+    }
+});
+
+// Game statistics routes
+app.post('/api/stats', authenticateToken, async (req, res) => {
+    try {
+        const { saveId, stats } = req.body;
+
+        if (!saveId || !stats) {
+            return res.status(400).json({ error: 'Save ID and stats are required' });
+        }
+
+        await statsDB.updateGameStats(req.user.userId, saveId, stats);
+        res.json({ message: 'Stats updated successfully' });
+    } catch (error) {
+        console.error('Update stats error:', error);
+        res.status(500).json({ error: 'Failed to update stats' });
+    }
+});
+
+app.get('/api/stats', authenticateToken, async (req, res) => {
+    try {
+        const stats = await statsDB.getUserStats(req.user.userId);
+        res.json({ stats });
+    } catch (error) {
+        console.error('Get stats error:', error);
+        res.status(500).json({ error: 'Failed to get stats' });
+    }
 });
 
 // GPT-powered free roam endpoint
 app.post('/api/free-roam', async (req, res) => {
-  try {
-    const { action, playerStats, storyContext } = req.body;
-    
-    const prompt = `You are narrating a Hunger Games interactive story. The player is in the arena and has typed: "${action}"
+    try {
+        const { action, playerStats, storyContext } = req.body;
+        
+        const prompt = `You are narrating a Hunger Games interactive story. The player is in the arena and has typed: "${action}"
 
 Player Stats:
 - Name: ${playerStats.name}
@@ -34,34 +303,39 @@ Player Stats:
 
 Story Context: ${storyContext}
 
-Write a 2-3 sentence response describing what happens when the player tries this action. Make it immersive, dramatic, and appropriate for the Hunger Games setting. The response should be realistic and could have consequences (good or bad) for the player. Consider that higher sponsor points and training scores might influence how sponsors and other tributes react to the player.
+Write a 2-3 sentence response describing what happens when the player tries this action. Make it immersive, dramatic, and appropriate for the Hunger Games setting. The response should be engaging and move the story forward.`;
 
-Response:`;
+        const completion = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 150,
+            temperature: 0.8
+        });
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: "You are a creative storyteller for an interactive Hunger Games adventure. Write engaging, dramatic responses that fit the tone and setting of the Hunger Games universe. Consider the player's training score and sponsor points when crafting responses - higher scores might lead to more favorable outcomes or sponsor attention."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      max_tokens: 150,
-      temperature: 0.8
-    });
+        const response = completion.choices[0].message.content.trim();
+        res.json({ response });
 
-    const response = completion.choices[0].message.content;
-    res.json({ response });
-  } catch (error) {
-    console.error('GPT API Error:', error);
-    res.json({ 
-      response: "You try the action, but something unexpected happens. The arena is full of surprises." 
-    });
-  }
+    } catch (error) {
+        console.error('GPT API error:', error);
+        res.status(500).json({ 
+            error: 'Failed to generate response',
+            fallback: "You attempt the action, but something unexpected happens in the arena."
+        });
+    }
 });
 
-app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+// Serve the main page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Serve the authentication page
+app.get('/auth.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'auth.html'));
+});
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`Server running on ${PORT}`);
+    console.log(`OpenAI API Key: ${process.env.OPENAI_API_KEY ? 'Configured' : 'Missing'}`);
+});

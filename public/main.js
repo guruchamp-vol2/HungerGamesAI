@@ -1,3 +1,11 @@
+// Global variables
+let story;
+let currentChoices = [];
+let currentUser = null;
+let authToken = localStorage.getItem('authToken');
+let currentSaveId = null;
+let gameStartTime = Date.now();
+
 // Character data object
 const charData = {
     name: "",
@@ -10,12 +18,74 @@ const charData = {
     sponsorPoints: 0
 };
 
-// Initialize the story
-let story;
-let currentChoices = [];
-
-// Load the story when the page loads
+// Initialize the application
 window.addEventListener('load', async () => {
+    // Check authentication
+    await checkAuthentication();
+    
+    // Load the story
+    await loadStory();
+    
+    // Set up event listeners
+    setupEventListeners();
+    
+    // Load user saves if authenticated
+    if (currentUser && currentUser.id !== 'guest') {
+        loadUserSaves();
+    }
+});
+
+// Check authentication status
+async function checkAuthentication() {
+    if (authToken) {
+        try {
+            const response = await fetch('/api/profile', {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                currentUser = data.user;
+                updateUserDisplay();
+            } else {
+                // Token invalid, clear it
+                localStorage.removeItem('authToken');
+                authToken = null;
+                currentUser = { id: 'guest', username: 'Guest Player' };
+                updateUserDisplay();
+            }
+        } catch (error) {
+            console.error('Authentication check failed:', error);
+            localStorage.removeItem('authToken');
+            authToken = null;
+            currentUser = { id: 'guest', username: 'Guest Player' };
+            updateUserDisplay();
+        }
+    } else {
+        currentUser = { id: 'guest', username: 'Guest Player' };
+        updateUserDisplay();
+    }
+}
+
+// Update user display
+function updateUserDisplay() {
+    const usernameElement = document.getElementById('username');
+    const userStatusElement = document.querySelector('.user-info div:last-child');
+    
+    if (currentUser) {
+        usernameElement.textContent = currentUser.username;
+        if (currentUser.id === 'guest') {
+            userStatusElement.textContent = 'Playing as guest (no saves)';
+        } else {
+            userStatusElement.textContent = 'Ready to enter the arena';
+        }
+    }
+}
+
+// Load the story
+async function loadStory() {
     try {
         const response = await fetch('story.json');
         const storyContent = await response.json();
@@ -25,19 +95,18 @@ window.addEventListener('load', async () => {
         // Start the story
         continueStory();
         
-        // Set up input handlers
-        setupInputHandlers();
-        
     } catch (error) {
         console.error('Error loading story:', error);
         document.getElementById('storyContainer').innerHTML = '<p style="color: #ff6b6b;">Error loading story. Please refresh the page.</p>';
     }
-});
+}
 
-// Set up input handlers
-function setupInputHandlers() {
+// Set up event listeners
+function setupEventListeners() {
     const cmdInput = document.getElementById('cmdInput');
     const hintBtn = document.getElementById('hintBtn');
+    const saveForm = document.getElementById('saveForm');
+    const feedbackForm = document.getElementById('feedbackForm');
     
     // Handle Enter key in input
     cmdInput.addEventListener('keypress', (e) => {
@@ -53,6 +122,18 @@ function setupInputHandlers() {
     // Handle hint button
     hintBtn.addEventListener('click', () => {
         showHint();
+    });
+    
+    // Handle save form
+    saveForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        saveGame();
+    });
+    
+    // Handle feedback form
+    feedbackForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitFeedback();
     });
 }
 
@@ -229,6 +310,7 @@ function updateCharacterStats() {
     // Update health bar with animation
     const health = story.variablesState["health"] || 100;
     const healthBar = document.getElementById('health');
+    const healthValue = document.getElementById('healthValue');
     const currentWidth = parseInt(healthBar.style.width) || 100;
     const targetWidth = health;
     
@@ -236,6 +318,8 @@ function updateCharacterStats() {
     if (currentWidth !== targetWidth) {
         animateHealthBar(currentWidth, targetWidth);
     }
+    
+    healthValue.textContent = `${health}%`;
     
     // Update character data object
     charData.name = story.variablesState["name"] || "";
@@ -281,6 +365,388 @@ function animateHealthBar(from, to) {
     requestAnimationFrame(update);
 }
 
+// Save game functionality
+async function saveGame() {
+    if (currentUser.id === 'guest') {
+        alert('Guest players cannot save games. Please create an account to save your progress.');
+        closeModal('saveModal');
+        return;
+    }
+    
+    const saveName = document.getElementById('saveName').value.trim();
+    if (!saveName) {
+        alert('Please enter a save name.');
+        return;
+    }
+    
+    try {
+        const storyState = story.state.toJson();
+        const characterData = {
+            ...charData,
+            playTimeMinutes: Math.floor((Date.now() - gameStartTime) / 60000)
+        };
+        
+        const response = await fetch('/api/saves', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({
+                saveName,
+                storyState,
+                characterData
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            currentSaveId = data.save.id;
+            alert('Game saved successfully!');
+            closeModal('saveModal');
+            loadUserSaves(); // Refresh save list
+        } else {
+            const errorData = await response.json();
+            alert(errorData.error || 'Failed to save game.');
+        }
+    } catch (error) {
+        console.error('Save error:', error);
+        alert('Failed to save game. Please try again.');
+    }
+}
+
+// Load user saves
+async function loadUserSaves() {
+    if (currentUser.id === 'guest') {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/saves', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            displaySaves(data.saves);
+        }
+    } catch (error) {
+        console.error('Load saves error:', error);
+    }
+}
+
+// Display saves in sidebar
+function displaySaves(saves) {
+    const saveList = document.getElementById('saveList');
+    
+    if (saves.length === 0) {
+        saveList.innerHTML = '<div style="text-align: center; color: #888; font-style: italic;">No saves yet</div>';
+        return;
+    }
+    
+    saveList.innerHTML = '';
+    saves.forEach(save => {
+        const saveItem = document.createElement('div');
+        saveItem.className = 'save-item';
+        saveItem.onclick = () => loadSave(save.id);
+        
+        const saveName = document.createElement('div');
+        saveName.className = 'save-name';
+        saveName.textContent = save.save_name;
+        
+        const saveDate = document.createElement('div');
+        saveDate.className = 'save-date';
+        saveDate.textContent = new Date(save.updated_at).toLocaleDateString();
+        
+        saveItem.appendChild(saveName);
+        saveItem.appendChild(saveDate);
+        saveList.appendChild(saveItem);
+    });
+}
+
+// Load a specific save
+async function loadSave(saveId) {
+    try {
+        const response = await fetch(`/api/saves/${saveId}`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const save = data.save;
+            
+            // Load story state
+            story.state.loadJson(save.story_state);
+            
+            // Update character data
+            Object.assign(charData, save.character_data);
+            
+            // Clear story container and continue
+            document.getElementById('storyContainer').innerHTML = '';
+            continueStory();
+            
+            currentSaveId = saveId;
+            closeModal('loadModal');
+            
+            alert('Game loaded successfully!');
+        } else {
+            alert('Failed to load save.');
+        }
+    } catch (error) {
+        console.error('Load save error:', error);
+        alert('Failed to load save. Please try again.');
+    }
+}
+
+// Show save modal
+function showSaveModal() {
+    if (currentUser.id === 'guest') {
+        alert('Please create an account to save your game progress.');
+        return;
+    }
+    document.getElementById('saveModal').style.display = 'block';
+    document.getElementById('saveName').focus();
+}
+
+// Show load modal
+function showLoadModal() {
+    if (currentUser.id === 'guest') {
+        alert('Please create an account to load saved games.');
+        return;
+    }
+    document.getElementById('loadModal').style.display = 'block';
+    loadSavesForModal();
+}
+
+// Load saves for modal
+async function loadSavesForModal() {
+    const loadSavesList = document.getElementById('loadSavesList');
+    loadSavesList.innerHTML = '<div style="text-align: center; color: #888; font-style: italic;">Loading saves...</div>';
+    
+    try {
+        const response = await fetch('/api/saves', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            displaySavesInModal(data.saves);
+        } else {
+            loadSavesList.innerHTML = '<div style="text-align: center; color: #ff6b6b;">Failed to load saves</div>';
+        }
+    } catch (error) {
+        console.error('Load saves error:', error);
+        loadSavesList.innerHTML = '<div style="text-align: center; color: #ff6b6b;">Failed to load saves</div>';
+    }
+}
+
+// Display saves in modal
+function displaySavesInModal(saves) {
+    const loadSavesList = document.getElementById('loadSavesList');
+    
+    if (saves.length === 0) {
+        loadSavesList.innerHTML = '<div style="text-align: center; color: #888; font-style: italic;">No saves found</div>';
+        return;
+    }
+    
+    loadSavesList.innerHTML = '';
+    saves.forEach(save => {
+        const saveItem = document.createElement('div');
+        saveItem.className = 'save-item';
+        saveItem.onclick = () => loadSave(save.id);
+        
+        const saveName = document.createElement('div');
+        saveName.className = 'save-name';
+        saveName.textContent = save.save_name;
+        
+        const saveDate = document.createElement('div');
+        saveDate.className = 'save-date';
+        saveDate.textContent = new Date(save.updated_at).toLocaleDateString();
+        
+        saveItem.appendChild(saveName);
+        saveItem.appendChild(saveDate);
+        loadSavesList.appendChild(saveItem);
+    });
+}
+
+// Submit feedback
+async function submitFeedback() {
+    const subject = document.getElementById('feedbackSubject').value.trim();
+    const message = document.getElementById('feedbackMessage').value.trim();
+    const rating = document.getElementById('feedbackRating').value;
+    
+    if (!subject || !message) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+    
+    try {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        
+        const response = await fetch('/api/feedback', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                subject,
+                message,
+                rating: rating || null,
+                username: currentUser.username
+            })
+        });
+        
+        if (response.ok) {
+            alert('Feedback submitted successfully! Thank you for your input.');
+            closeModal('feedbackModal');
+            document.getElementById('feedbackForm').reset();
+        } else {
+            const errorData = await response.json();
+            alert(errorData.error || 'Failed to submit feedback.');
+        }
+    } catch (error) {
+        console.error('Submit feedback error:', error);
+        alert('Failed to submit feedback. Please try again.');
+    }
+}
+
+// Show feedback modal
+function showFeedbackModal() {
+    document.getElementById('feedbackModal').style.display = 'block';
+    document.getElementById('feedbackSubject').focus();
+}
+
+// Show feedback list
+function showFeedbackList() {
+    document.getElementById('feedbackListModal').style.display = 'block';
+    loadFeedbackList();
+}
+
+// Load feedback list
+async function loadFeedbackList() {
+    const feedbackList = document.getElementById('feedbackList');
+    feedbackList.innerHTML = '<div style="text-align: center; color: #888; font-style: italic;">Loading feedback...</div>';
+    
+    try {
+        const response = await fetch('/api/feedback');
+        
+        if (response.ok) {
+            const data = await response.json();
+            displayFeedbackList(data.feedback);
+        } else {
+            feedbackList.innerHTML = '<div style="text-align: center; color: #ff6b6b;">Failed to load feedback</div>';
+        }
+    } catch (error) {
+        console.error('Load feedback error:', error);
+        feedbackList.innerHTML = '<div style="text-align: center; color: #ff6b6b;">Failed to load feedback</div>';
+    }
+}
+
+// Display feedback list
+function displayFeedbackList(feedback) {
+    const feedbackList = document.getElementById('feedbackList');
+    
+    if (feedback.length === 0) {
+        feedbackList.innerHTML = '<div style="text-align: center; color: #888; font-style: italic;">No feedback yet</div>';
+        return;
+    }
+    
+    feedbackList.innerHTML = '';
+    feedback.forEach(item => {
+        const feedbackItem = document.createElement('div');
+        feedbackItem.style.cssText = `
+            background: rgba(40, 40, 40, 0.5);
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        `;
+        
+        const header = document.createElement('div');
+        header.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        `;
+        
+        const title = document.createElement('div');
+        title.style.cssText = `
+            font-weight: 600;
+            color: #ffd93d;
+            font-size: 1.1rem;
+        `;
+        title.textContent = item.subject;
+        
+        const date = document.createElement('div');
+        date.style.cssText = `
+            font-size: 0.8rem;
+            color: #888;
+        `;
+        date.textContent = new Date(item.created_at).toLocaleDateString();
+        
+        const message = document.createElement('div');
+        message.style.cssText = `
+            color: #e0e0e0;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        `;
+        message.textContent = item.message;
+        
+        const footer = document.createElement('div');
+        footer.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        `;
+        
+        const author = document.createElement('div');
+        author.style.color = '#888';
+        author.textContent = `By: ${item.username || 'Anonymous'}`;
+        
+        const rating = document.createElement('div');
+        if (item.rating) {
+            rating.textContent = '⭐'.repeat(item.rating);
+        } else {
+            rating.textContent = 'No rating';
+            rating.style.color = '#888';
+        }
+        
+        header.appendChild(title);
+        header.appendChild(date);
+        footer.appendChild(author);
+        footer.appendChild(rating);
+        
+        feedbackItem.appendChild(header);
+        feedbackItem.appendChild(message);
+        feedbackItem.appendChild(footer);
+        feedbackList.appendChild(feedbackItem);
+    });
+}
+
+// Close modal
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// Logout function
+function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser');
+    window.location.href = '/auth.html';
+}
+
 // Show hint
 function showHint() {
     const hints = [
@@ -296,7 +762,7 @@ function showHint() {
         "Type 'hunt' to find food in the wilderness",
         "Use 'climb tree' to get a better view of your surroundings",
         
-        // New massive update actions
+        // Advanced actions
         "Try 'craft weapon' to fashion tools from materials",
         "Type 'scout area' to survey for threats and resources",
         "Use 'rest' to recover energy and health",
@@ -307,6 +773,8 @@ function showHint() {
         "Type 'sabotage' to damage enemy supplies",
         "Use 'heal wounds' to treat your injuries",
         "Try 'create distraction' to escape or gain advantage",
+        
+        // Strategic actions
         "Type 'study terrain' to find strategic advantages",
         "Use 'signal allies' to communicate with potential friends",
         "Try 'poison supplies' to eliminate competition",
@@ -316,27 +784,7 @@ function showHint() {
         "Type 'create map' to plan your strategy",
         "Use 'train skills' to improve your abilities",
         "Try 'barter' to trade with other tributes",
-        "Type 'create armor' to fashion protective gear",
-        "Use 'establish perimeter' to set up defenses",
-        "Try 'analyze weather' to predict changes",
-        "Type 'create medicine' to brew healing potions",
-        "Use 'build bridge' to cross difficult terrain",
-        "Try 'create camouflage' to hide better",
-        "Type 'establish lookout' to monitor activity",
-        "Use 'create decoy' to mislead enemies",
-        "Try 'study wildlife' to learn about local animals",
-        "Type 'create alarm' to set up warning systems",
-        "Use 'build raft' to cross water obstacles",
-        "Try 'create signal' to communicate with allies",
-        "Type 'establish cache' to create hidden supplies",
-        "Use 'create diversion' to orchestrate complex plans",
-        "Try 'build catapult' to construct siege weapons",
-        "Type 'create poison' to develop deadly toxins",
-        "Use 'establish network' to create a spy network",
-        "Try 'build fortress' to construct a heavily fortified base",
-        "Type 'create army' to recruit and organize other tributes",
-        "Use 'establish kingdom' to create a mini-empire",
-        "Try 'create rebellion' to lead against the Capitol"
+        "Type 'create armor' to fashion protective gear"
     ];
     
     const randomHint = hints[Math.floor(Math.random() * hints.length)];
@@ -384,3 +832,13 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+}
