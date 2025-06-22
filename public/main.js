@@ -27,6 +27,7 @@ let konamiIndex = 0;
 let cheatActive = false;
 let cheatSequence = '';
 
+// Konami code detection
 window.addEventListener('keydown', (e) => {
     // Don't trigger on input fields for Konami code
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
@@ -39,8 +40,8 @@ window.addEventListener('keydown', (e) => {
         if (konamiIndex === konamiCode.length) {
             cheatActive = true;
             konamiIndex = 0;
-            cheatSequence = ''; // Reset text sequence
-            console.log('Cheat code activated! Type "Iamdevwin" to win.');
+            cheatSequence = '';
+            console.log('🎮 CHEAT CODE ACTIVATED! Type "Iamdevwin" to win!');
             showCheatHint();
         }
     } else {
@@ -48,53 +49,41 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// Global cheat code detection for typing "Iamdevwin"
+// Simple cheat code detection - just listen for the exact sequence
 window.addEventListener('keydown', (e) => {
-    // Only check if cheat is active
-    if (cheatActive) {
-        // Allow typing in input fields for cheat code
-        const key = e.key.toLowerCase();
+    if (!cheatActive) return;
+    
+    const key = e.key.toLowerCase();
+    
+    // Only track letters and numbers
+    if (/[a-z0-9]/.test(key)) {
+        cheatSequence += key;
+        console.log(`Cheat sequence: ${cheatSequence}`);
         
-        // Check if it's a letter or number
-        if (/[a-z0-9]/.test(key)) {
-            cheatSequence += key;
-            console.log(`Cheat sequence: ${cheatSequence}`);
-            
-            if (cheatSequence === 'iamdevwin') {
-                console.log('CHEAT WIN ACTIVATED!');
-                activateCheatWin();
-                cheatSequence = '';
-                cheatActive = false;
-            } else if (!'iamdevwin'.startsWith(cheatSequence)) {
-                // Reset if sequence doesn't match
-                cheatSequence = '';
-            }
-        } else if (e.key === 'Backspace') {
-            // Allow backspace to correct typing
-            cheatSequence = cheatSequence.slice(0, -1);
-            console.log(`Cheat sequence (backspace): ${cheatSequence}`);
-        } else if (e.key === 'Escape') {
-            // Allow escape to cancel
+        // Check if we have the full sequence
+        if (cheatSequence === 'iamdevwin') {
+            console.log('🏆 CHEAT WIN ACTIVATED! 🏆');
+            activateCheatWin();
             cheatSequence = '';
             cheatActive = false;
-            console.log('Cheat code cancelled');
+        }
+        // Reset if sequence doesn't match
+        else if (!'iamdevwin'.startsWith(cheatSequence)) {
+            cheatSequence = '';
         }
     }
-});
-
-function checkCheatSequence(target, event) {
-    cheatSequence += event.key.toLowerCase();
-    console.log(`Cheat sequence: ${cheatSequence}`);
-    
-    if (cheatSequence === target.toLowerCase()) {
-        console.log('CHEAT WIN ACTIVATED!');
-        activateCheatWin();
+    // Allow backspace
+    else if (e.key === 'Backspace') {
+        cheatSequence = cheatSequence.slice(0, -1);
+        console.log(`Cheat sequence (backspace): ${cheatSequence}`);
+    }
+    // Allow escape to cancel
+    else if (e.key === 'Escape') {
         cheatSequence = '';
         cheatActive = false;
-    } else if (!target.toLowerCase().startsWith(cheatSequence)) {
-        cheatSequence = '';
+        console.log('Cheat code cancelled');
     }
-}
+});
 
 function activateCheatWin() {
     const storyContainer = document.getElementById('storyContainer');
@@ -193,6 +182,14 @@ function showCheatHint() {
             }, 300);
         }
     }, 8000);
+}
+
+// Test function for cheat code
+function testCheatCode() {
+    console.log('Testing cheat code...');
+    cheatActive = true;
+    cheatSequence = '';
+    showCheatHint();
 }
 
 // Initialize the application
@@ -379,28 +376,9 @@ async function loadStory() {
     } catch (error) {
         console.error('Error loading story:', error);
         
-        // Show detailed error message
-        const storyContainer = document.getElementById('storyContainer');
-        storyContainer.innerHTML = `
-            <div style="color: #ff6b6b; text-align: center; padding: 20px;">
-                <h3>Story Loading Error</h3>
-                <p>Error: ${error.message}</p>
-                <p>Please refresh the page or try again later.</p>
-                <button onclick="location.reload()" style="
-                    background: #ff6b6b;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    margin-top: 10px;
-                ">Refresh Page</button>
-            </div>
-        `;
-        
-        // Try to create a minimal story as fallback
+        // Create a simple working story as fallback
         try {
-            console.log('Attempting to create fallback story...');
+            console.log('Creating fallback story...');
             const fallbackStory = {
                 inkVersion: 20,
                 root: [{
@@ -417,7 +395,17 @@ async function loadStory() {
                     }]
                 }],
                 listDefs: {},
-                variables: [],
+                variables: [
+                    { "name": "health", "value": 100 },
+                    { "name": "name", "value": "" },
+                    { "name": "age", "value": 0 },
+                    { "name": "district", "value": "" },
+                    { "name": "weapon", "value": "" },
+                    { "name": "inventory", "value": "" },
+                    { "name": "sponsor_points", "value": 0 },
+                    { "name": "training_score", "value": 0 },
+                    { "name": "instawin", "value": false }
+                ],
                 knots: {
                     "intro": {
                         "c": [{
@@ -437,12 +425,32 @@ async function loadStory() {
             story = new inkjs.Story(fallbackStory);
             console.log('Fallback story created successfully');
             
-            // Clear error message and start fallback story
+            // Clear loading message and start story
+            const storyContainer = document.getElementById('storyContainer');
             storyContainer.innerHTML = '';
             continueStory();
             
         } catch (fallbackError) {
             console.error('Fallback story creation failed:', fallbackError);
+            
+            // Show error message
+            const storyContainer = document.getElementById('storyContainer');
+            storyContainer.innerHTML = `
+                <div style="color: #ff6b6b; text-align: center; padding: 20px;">
+                    <h3>Story Loading Error</h3>
+                    <p>Error: ${error.message}</p>
+                    <p>Please refresh the page or try again later.</p>
+                    <button onclick="location.reload()" style="
+                        background: #ff6b6b;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        margin-top: 10px;
+                    ">Refresh Page</button>
+                </div>
+            `;
         }
     }
 }
