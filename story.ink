@@ -100,8 +100,6 @@ Your mentor pulls you into a dark corner.
     Your mentor gives you a bundle containing rope, wire, and various small tools. "This is for setting traps and moving quietly," she says. "The rope can be used for climbing, binding, or even as a weapon. The wire is perfect for snares." You nod, understanding the value of stealth in the arena.
     -> training_start
 
--> training_start
-
 === training_start ===
 You enter the Capitol training center.
 -> train_day_1
@@ -126,8 +124,6 @@ Day 1 of training. Choose your activity:
     You spend the day watching the other tributes train, studying their strengths and weaknesses. You notice patterns in their movements, their preferred weapons, and how they interact with each other. Some form alliances, others work alone. You file away every detail, knowing this information could be crucial in the arena.
     -> train_day_2
 
--> train_day_2
-
 === train_day_2 ===
 Day 2 of training. Choose again:
 
@@ -146,8 +142,6 @@ Day 2 of training. Choose again:
     ~ sponsor_points += 15
     You spend hours learning hand-to-hand combat techniques - punches, kicks, blocks, and throws. Your instructor emphasizes efficiency and using your opponent's strength against them. "In the arena, you'll need to fight dirty to survive," he says. You practice until your muscles ache and your reflexes become sharper.
     -> interview
-
--> interview
 
 === interview ===
 Your private interview with the Gamemakers begins.
@@ -193,8 +187,6 @@ Your training score is: {training_score}
 * Continue to the platform
     -> platform_start
 
--> platform_start
-
 === platform_start ===
 You stand on the tribute platform. 60 seconds until start.
 
@@ -216,8 +208,6 @@ The horn sounds.
     You flee into the trees, avoiding the bloodbath.
     The horn sounds and you immediately turn and run toward the forest. Behind you, you hear screams and the sounds of fighting as tributes battle over the supplies at the Cornucopia. You don't look back, focusing only on putting distance between yourself and the bloodbath. The trees provide cover as you disappear into the wilderness.
     -> arena_intro
-
--> arena_intro
 
 === arena_intro ===
 You are now inside the arena. The Games have begun.
