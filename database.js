@@ -8,14 +8,11 @@ const persistentDataDir = '/data';
 const dbName = 'game.db';
 let dbPath;
 
-if (isProduction) {
-    // In production (like on Render), use the persistent disk directory.
-    if (!fs.existsSync(persistentDataDir)) {
-        fs.mkdirSync(persistentDataDir, { recursive: true });
-    }
+if (isProduction && fs.existsSync(persistentDataDir)) {
+    // On Render or production, use the persistent disk if it exists
     dbPath = path.join(persistentDataDir, dbName);
 } else {
-    // In development, use a local file.
+    // In development or if /data is not available, use a local file
     dbPath = path.join(__dirname, dbName);
 }
 
