@@ -244,9 +244,35 @@ function updateUserDisplay() {
 async function loadStory() {
     try {
         const response = await fetch('story.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const storyContent = await response.json();
         
         story = new inkjs.Story(storyContent);
+        
+        // Initialize story variables if they don't exist
+        if (story.variablesState) {
+            story.variablesState["health"] = story.variablesState["health"] || 100;
+            story.variablesState["stamina"] = story.variablesState["stamina"] || 100;
+            story.variablesState["hunger"] = story.variablesState["hunger"] || 0;
+            story.variablesState["strength"] = story.variablesState["strength"] || 0;
+            story.variablesState["knowledge"] = story.variablesState["knowledge"] || 0;
+            story.variablesState["awareness"] = story.variablesState["awareness"] || 0;
+            story.variablesState["agility"] = story.variablesState["agility"] || 0;
+            story.variablesState["stealth"] = story.variablesState["stealth"] || 0;
+            story.variablesState["idle"] = story.variablesState["idle"] || 0;
+            story.variablesState["name"] = story.variablesState["name"] || "";
+            story.variablesState["age"] = story.variablesState["age"] || 0;
+            story.variablesState["district"] = story.variablesState["district"] || "";
+            story.variablesState["weapon"] = story.variablesState["weapon"] || "";
+            story.variablesState["inventory"] = story.variablesState["inventory"] || "";
+            story.variablesState["specialty"] = story.variablesState["specialty"] || "";
+            story.variablesState["gpt_response"] = story.variablesState["gpt_response"] || "";
+            story.variablesState["sponsor_points"] = story.variablesState["sponsor_points"] || 0;
+            story.variablesState["training_score"] = story.variablesState["training_score"] || 0;
+            story.variablesState["instawin"] = story.variablesState["instawin"] || false;
+        }
         
         // Start the story
         continueStory();
