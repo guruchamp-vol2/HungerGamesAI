@@ -616,40 +616,27 @@ function displayChoices() {
                     choiceElement.style.transform = '';
                 }, 150);
                 
-                // Handle custom name input
-                if (choice.text === 'Enter your name') {
-                    handleNameInput();
-                } else {
-                    // Make the choice
-                    if (story.ChooseChoiceIndex) {
-                        story.ChooseChoiceIndex(index);
+                // First, always tell the story engine which choice was selected.
+                story.ChooseChoiceIndex(index);
+                
+                // Special handling for name input
+                if (choice.text.includes('Enter your name')) {
+                    const name = prompt('Enter your tribute name:');
+                    if (name && name.trim()) {
+                        story.variablesState["name"] = name.trim();
+                    } else {
+                        story.variablesState["name"] = "Tribute"; // Default if prompt is empty
                     }
-                    continueStory();
                 }
+                
+                // Now, continue the story.
+                continueStory();
             });
             choicesContainer.appendChild(choiceElement);
         });
     } else {
         // No choices means we're in free roam mode
         showFreeRoamMode();
-    }
-}
-
-// Handle custom name input
-function handleNameInput() {
-    const name = prompt('Enter your tribute name:');
-    if (name && name.trim()) {
-        if (story && story.variablesState) {
-            story.variablesState["name"] = name.trim();
-        }
-        // Continue to age selection
-        continueStory();
-    } else {
-        // If no name entered, use default
-        if (story && story.variablesState) {
-            story.variablesState["name"] = "Tribute";
-        }
-        continueStory();
     }
 }
 

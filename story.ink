@@ -27,7 +27,6 @@ Before we begin, let's get to know you.
 
 What is your name?
 * Enter your name
-    ~ name = "Tribute"
     -> ask_age
 
 === ask_age ===
