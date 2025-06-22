@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
 require('dotenv').config();
@@ -19,12 +18,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public'));
-app.use(session({
-    secret: JWT_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false } // Set to true in production with HTTPS
-}));
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -52,10 +45,16 @@ initializeDatabase().then(() => {
 });
 
 // OpenAI configuration
-const OpenAI = require('openai');
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
+let openai = null;
+if (process.env.OPENAI_API_KEY) {
+    const OpenAI = require('openai');
+    openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+    });
+    console.log('OpenAI API configured successfully');
+} else {
+    console.log('OpenAI API key not found - free roam AI features will be disabled');
+}
 
 // Authentication routes
 app.post('/api/register', async (req, res) => {
@@ -288,6 +287,20 @@ app.get('/api/stats', authenticateToken, async (req, res) => {
 app.post('/api/free-roam', async (req, res) => {
     try {
         const { action, playerStats, storyContext } = req.body;
+        
+        if (!openai) {
+            // Fallback response when OpenAI is not configured
+            const fallbackResponses = [
+                "You attempt the action, but the arena's unpredictable nature makes the outcome uncertain.",
+                "The action you try has mixed results in the harsh environment of the Hunger Games.",
+                "Your attempt to " + action + " meets with varying degrees of success in the arena.",
+                "The arena responds to your action in ways you couldn't have predicted.",
+                "You try to " + action + ", but the Games have a way of surprising everyone."
+            ];
+            
+            const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+            return res.json({ response: randomResponse });
+        }
         
         const prompt = `You are narrating a Hunger Games interactive story. The player is in the arena and has typed: "${action}"
 
