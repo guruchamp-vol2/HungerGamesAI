@@ -1278,14 +1278,14 @@ async function submitLeaderboardEntry(type = 'normal') {
             sponsorPoints: story && story.variablesState ? (story.variablesState["sponsor_points"] || 0) : 0
         };
         
-        // Determine win type
-        let winType = 'normal';
-        if (type === 'cheat') {
-            winType = 'Cheat Win';
-        } else if (story && story.variablesState && story.variablesState["instawin"]) {
-            winType = 'Cheat Win';
-        } else {
-            winType = 'Hunger Games Champion';
+        // Determine win type - special case for Dev user
+        let winType = 'Hunger Games Champion';
+        if (type === 'cheat' || (story && story.variablesState && story.variablesState["instawin"])) {
+            if (username === 'Dev') {
+                winType = 'Hunger Games Champion'; // Regular win for Dev
+            } else {
+                winType = 'Cheat Win'; // Cheat win for everyone else
+            }
         }
         
         console.log('Submitting win for:', username, 'District:', characterData.district, 'Type:', winType);
