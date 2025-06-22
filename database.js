@@ -86,6 +86,23 @@ function initializeDatabase() {
             console.log('Game stats table created/verified');
             resolve();
         });
+
+        // Leaderboard table
+        db.run(`CREATE TABLE IF NOT EXISTS leaderboard (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            district TEXT,
+            win_type TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`, (err) => {
+            if (err) {
+                console.error('Error creating leaderboard table:', err);
+                reject(err);
+                return;
+            }
+            console.log('Leaderboard table created/verified');
+            resolve();
+        });
     });
 }
 
@@ -332,11 +349,46 @@ const statsDB = {
     }
 };
 
+// Leaderboard functions
+const leaderboardDB = {
+    submitWin: (username, district, winType) => {
+        return new Promise((resolve, reject) => {
+            db.run(
+                'INSERT INTO leaderboard (username, district, win_type) VALUES (?, ?, ?)',
+                [username, district, winType],
+                function(err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve({ id: this.lastID });
+                    }
+                }
+            );
+        });
+    },
+    getTop: (limit = 20) => {
+        return new Promise((resolve, reject) => {
+            db.all(
+                'SELECT * FROM leaderboard ORDER BY created_at DESC LIMIT ?',
+                [limit],
+                (err, rows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(rows);
+                    }
+                }
+            );
+        });
+    }
+};
+
 module.exports = {
     db,
     initializeDatabase,
     userDB,
     saveDB,
     feedbackDB,
-    statsDB
+    statsDB,
+    leaderboardDB
 }; 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hunger Games AI - Interactive Story</title>
+  <title>Hunger Games</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/inkjs@1.12.0/dist/ink.js"></script>
   <style>
@@ -352,6 +352,46 @@
       transform: translateY(-1px);
     }
 
+    .leaderboard-section {
+      margin-top: 20px;
+    }
+
+    .leaderboard-item {
+      background: rgba(40, 40, 40, 0.5);
+      border: 1px solid #555;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .leaderboard-item:hover {
+      background: rgba(40, 40, 40, 0.8);
+      border-color: #ffd93d;
+    }
+
+    .leaderboard-rank {
+      font-weight: 600;
+      color: #ffd93d;
+      margin-bottom: 5px;
+    }
+
+    .leaderboard-username {
+      font-weight: 600;
+      color: #e0e0e0;
+      margin-bottom: 3px;
+    }
+
+    .leaderboard-details {
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+    .win-type {
+      color: #6bcf7f;
+      font-weight: 500;
+    }
+
     /* Modal styles */
     .modal {
       display: none;
@@ -512,7 +552,7 @@
 </head>
 <body>
   <div class="header">
-    <h1 class="game-title">Hunger Games AI</h1>
+    <h1 class="game-title">Hunger Games</h1>
     <div class="user-section">
       <div class="user-info">
         <div class="username" id="username">Guest Player</div>
@@ -521,6 +561,7 @@
       <div class="user-actions">
         <button class="header-btn" onclick="showSaveModal()">Save Game</button>
         <button class="header-btn" onclick="showLoadModal()">Load Game</button>
+        <button class="header-btn" onclick="showLeaderboardModal()">Leaderboard</button>
         <button class="header-btn" onclick="showFeedbackModal()">Feedback</button>
         <button class="header-btn" onclick="logout()">Logout</button>
       </div>
@@ -600,6 +641,14 @@
         <button class="feedback-btn" onclick="showFeedbackModal()">Send Feedback</button>
         <button class="feedback-btn" onclick="showFeedbackList()">View Feedback</button>
       </div>
+
+      <div class="leaderboard-section">
+        <h3 class="sidebar-title">Leaderboard</h3>
+        <button class="feedback-btn" onclick="showLeaderboardModal()">View Winners</button>
+        <div id="leaderboardPreview" style="margin-top: 10px; font-size: 0.8rem; color: #888; text-align: center;">
+          Loading recent winners...
+        </div>
+      </div>
     </div>
   </div>
 
@@ -674,6 +723,19 @@
       </div>
       <div id="feedbackList" style="max-height: 400px; overflow-y: auto;">
         <div style="text-align: center; color: #888; font-style: italic;">Loading feedback...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaderboard Modal -->
+  <div id="leaderboardModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Hunger Games Winners</h2>
+        <span class="close" onclick="closeModal('leaderboardModal')">&times;</span>
+      </div>
+      <div id="leaderboardList" style="max-height: 400px; overflow-y: auto;">
+        <div style="text-align: center; color: #888; font-style: italic;">Loading leaderboard...</div>
       </div>
     </div>
   </div>

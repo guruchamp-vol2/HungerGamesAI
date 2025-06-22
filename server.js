@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 require('dotenv').config();
 
-const { initializeDatabase, userDB, saveDB, feedbackDB, statsDB } = require('./database');
+const { initializeDatabase, userDB, saveDB, feedbackDB, statsDB, leaderboardDB } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -334,6 +334,32 @@ Write a 2-3 sentence response describing what happens when the player tries this
             error: 'Failed to generate response',
             fallback: "You attempt the action, but something unexpected happens in the arena."
         });
+    }
+});
+
+// Leaderboard routes
+app.post('/api/leaderboard', async (req, res) => {
+    try {
+        const { username, district, winType } = req.body;
+        if (!username || !winType) {
+            return res.status(400).json({ error: 'Username and win type are required' });
+        }
+        await leaderboardDB.submitWin(username, district, winType);
+        res.json({ message: 'Win submitted to leaderboard' });
+    } catch (error) {
+        console.error('Submit leaderboard error:', error);
+        res.status(500).json({ error: 'Failed to submit win' });
+    }
+});
+
+app.get('/api/leaderboard', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 20;
+        const top = await leaderboardDB.getTop(limit);
+        res.json({ leaderboard: top });
+    } catch (error) {
+        console.error('Get leaderboard error:', error);
+        res.status(500).json({ error: 'Failed to get leaderboard' });
     }
 });
 

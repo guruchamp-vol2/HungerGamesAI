@@ -18,6 +18,59 @@ const charData = {
     sponsorPoints: 0
 };
 
+// --- CHEAT CODE SYSTEM ---
+const konamiCode = [
+    'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
+    'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'
+];
+let konamiIndex = 0;
+let cheatActive = false;
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === konamiCode[konamiIndex]) {
+        konamiIndex++;
+        if (konamiIndex === konamiCode.length) {
+            cheatActive = true;
+            konamiIndex = 0;
+            // Optionally, show a hint to type the next part
+            showCheatHint();
+        }
+    } else {
+        konamiIndex = 0;
+    }
+});
+
+function showCheatHint() {
+    const hintPopup = document.createElement('div');
+    hintPopup.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(20, 20, 20, 0.95);
+        border: 2px solid #ffd93d;
+        border-radius: 10px;
+        padding: 20px;
+        color: #ffd93d;
+        font-size: 1.2rem;
+        text-align: center;
+        z-index: 2000;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.3s ease;
+        max-width: 400px;
+        line-height: 1.4;
+    `;
+    hintPopup.textContent = "Cheat code activated! Type 'Iamdevwin' and press Enter.";
+    document.body.appendChild(hintPopup);
+    setTimeout(() => {
+        hintPopup.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => {
+            document.body.removeChild(hintPopup);
+        }, 300);
+    }, 3000);
+}
+
 // Initialize the application
 window.addEventListener('load', async () => {
     // Check authentication
@@ -33,6 +86,9 @@ window.addEventListener('load', async () => {
     if (currentUser && currentUser.id !== 'guest') {
         loadUserSaves();
     }
+    
+    // Load leaderboard preview
+    loadLeaderboardPreview();
 });
 
 // Check authentication status
@@ -227,6 +283,22 @@ function showFreeRoamMode() {
 async function handleFreeRoamAction(action) {
     const typingIndicator = document.getElementById('typingIndicator');
     const storyContainer = document.getElementById('storyContainer');
+    
+    // --- CHEAT CODE: KONAMI + Iamdevwin ---
+    if (cheatActive && action.trim() === 'Iamdevwin') {
+        story.variablesState['instawin'] = true;
+        // Optionally, set other win variables or stats
+        const winText = document.createElement('p');
+        winText.className = 'fade-in';
+        winText.style.color = '#6bcf7f';
+        winText.style.fontWeight = 'bold';
+        winText.textContent = 'CHEAT ACTIVATED: INSTANT WIN! You are the champion of the Hunger Games!';
+        storyContainer.appendChild(winText);
+        cheatActive = false;
+        // Optionally, submit to leaderboard here
+        submitLeaderboardEntry('cheat');
+        return;
+    }
     
     // Show typing indicator
     typingIndicator.style.display = 'block';
@@ -841,4 +913,137 @@ window.onclick = function(event) {
             modal.style.display = 'none';
         }
     });
+}
+
+// --- LEADERBOARD SUBMISSION ---
+async function submitLeaderboardEntry(type = 'normal') {
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const characterData = JSON.parse(localStorage.getItem('characterData') || '{}');
+        
+        const response = await fetch('/api/leaderboard', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
+            body: JSON.stringify({
+                username: currentUser.username || 'Anonymous',
+                district: characterData.district || 'Unknown',
+                winType: type
+            })
+        });
+        
+        if (response.ok) {
+            console.log('Win submitted to leaderboard');
+            // Refresh leaderboard preview
+            loadLeaderboardPreview();
+        } else {
+            console.error('Failed to submit to leaderboard');
+        }
+    } catch (error) {
+        console.error('Error submitting to leaderboard:', error);
+    }
+}
+
+// Show leaderboard modal
+function showLeaderboardModal() {
+    document.getElementById('leaderboardModal').style.display = 'block';
+    loadLeaderboardList();
+}
+
+// Load leaderboard list
+async function loadLeaderboardList() {
+    try {
+        const response = await fetch('/api/leaderboard');
+        if (response.ok) {
+            const data = await response.json();
+            displayLeaderboardList(data.leaderboard);
+        } else {
+            document.getElementById('leaderboardList').innerHTML = 
+                '<div style="text-align: center; color: #ff6b6b;">Failed to load leaderboard</div>';
+        }
+    } catch (error) {
+        console.error('Error loading leaderboard:', error);
+        document.getElementById('leaderboardList').innerHTML = 
+            '<div style="text-align: center; color: #ff6b6b;">Error loading leaderboard</div>';
+    }
+}
+
+// Display leaderboard list
+function displayLeaderboardList(leaderboard) {
+    const leaderboardList = document.getElementById('leaderboardList');
+    
+    if (leaderboard.length === 0) {
+        leaderboardList.innerHTML = '<div style="text-align: center; color: #888; font-style: italic;">No winners yet</div>';
+        return;
+    }
+    
+    leaderboardList.innerHTML = '';
+    leaderboard.forEach((entry, index) => {
+        const leaderboardItem = document.createElement('div');
+        leaderboardItem.className = 'leaderboard-item';
+        
+        const rank = document.createElement('div');
+        rank.className = 'leaderboard-rank';
+        rank.textContent = `#${index + 1} Winner`;
+        
+        const username = document.createElement('div');
+        username.className = 'leaderboard-username';
+        username.textContent = entry.username;
+        
+        const details = document.createElement('div');
+        details.className = 'leaderboard-details';
+        details.innerHTML = `
+            <div>District: ${entry.district || 'Unknown'}</div>
+            <div>Win Type: <span class="win-type">${entry.win_type}</span></div>
+            <div>Date: ${new Date(entry.created_at).toLocaleDateString()}</div>
+        `;
+        
+        leaderboardItem.appendChild(rank);
+        leaderboardItem.appendChild(username);
+        leaderboardItem.appendChild(details);
+        leaderboardList.appendChild(leaderboardItem);
+    });
+}
+
+// Load leaderboard preview for sidebar
+async function loadLeaderboardPreview() {
+    try {
+        const response = await fetch('/api/leaderboard?limit=3');
+        if (response.ok) {
+            const data = await response.json();
+            displayLeaderboardPreview(data.leaderboard);
+        } else {
+            document.getElementById('leaderboardPreview').innerHTML = 
+                '<div style="color: #888;">Failed to load</div>';
+        }
+    } catch (error) {
+        console.error('Error loading leaderboard preview:', error);
+        document.getElementById('leaderboardPreview').innerHTML = 
+            '<div style="color: #888;">Error loading</div>';
+    }
+}
+
+// Display leaderboard preview
+function displayLeaderboardPreview(leaderboard) {
+    const preview = document.getElementById('leaderboardPreview');
+    
+    if (leaderboard.length === 0) {
+        preview.innerHTML = '<div style="color: #888;">No winners yet</div>';
+        return;
+    }
+    
+    let previewHTML = '';
+    leaderboard.slice(0, 3).forEach((entry, index) => {
+        previewHTML += `
+            <div style="margin-bottom: 5px; font-size: 0.75rem;">
+                <span style="color: #ffd93d;">#${index + 1}</span> 
+                <span style="color: #e0e0e0;">${entry.username}</span>
+                <br><span style="color: #6bcf7f; font-size: 0.7rem;">${entry.win_type}</span>
+            </div>
+        `;
+    });
+    
+    preview.innerHTML = previewHTML;
 }
