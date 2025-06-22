@@ -455,7 +455,58 @@ function createFallbackStory() {
                 },
                 ChooseChoiceIndex: function(index) {
                     console.log('Choice selected:', index);
-                    this.currentChoices = [];
+                    if (index === 0) {
+                        // Name entered, continue to age selection
+                        this.canContinue = true;
+                        this.currentChoices = [
+                            { text: "I'm 12 years old" },
+                            { text: "I'm 13 years old" },
+                            { text: "I'm 14 years old" },
+                            { text: "I'm 15 years old" },
+                            { text: "I'm 16 years old" },
+                            { text: "I'm 17 years old" },
+                            { text: "I'm 18 years old" }
+                        ];
+                    } else if (index >= 0 && index <= 6) {
+                        // Age selected, continue to district selection
+                        const ages = [12, 13, 14, 15, 16, 17, 18];
+                        this.variablesState["age"] = ages[index];
+                        this.canContinue = true;
+                        this.currentChoices = [
+                            { text: "District 1 - Luxury Items" },
+                            { text: "District 2 - Masonry & Defense" },
+                            { text: "District 3 - Technology" },
+                            { text: "District 4 - Fishing" },
+                            { text: "District 5 - Power" },
+                            { text: "District 6 - Transportation" },
+                            { text: "District 7 - Lumber" },
+                            { text: "District 8 - Textiles" },
+                            { text: "District 9 - Grain" },
+                            { text: "District 10 - Livestock" },
+                            { text: "District 11 - Agriculture" },
+                            { text: "District 12 - Coal Mining" }
+                        ];
+                    } else if (index >= 0 && index <= 11) {
+                        // District selected, continue to arena
+                        const districts = [
+                            "District 1 - Luxury Items",
+                            "District 2 - Masonry & Defense", 
+                            "District 3 - Technology",
+                            "District 4 - Fishing",
+                            "District 5 - Power",
+                            "District 6 - Transportation",
+                            "District 7 - Lumber",
+                            "District 8 - Textiles",
+                            "District 9 - Grain",
+                            "District 10 - Livestock",
+                            "District 11 - Agriculture",
+                            "District 12 - Coal Mining"
+                        ];
+                        this.variablesState["district"] = districts[index];
+                        this.canContinue = true;
+                        this.currentChoices = [];
+                        // Enter free roam mode
+                    }
                 }
             };
             console.log('Fallback story created successfully without inkjs');
