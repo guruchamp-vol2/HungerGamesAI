@@ -173,6 +173,9 @@ function showCheatHint() {
 
 // Initialize the application
 window.addEventListener('load', async () => {
+    // Wait a bit for scripts to load
+    await waitForInkjs();
+    
     // Check authentication
     await checkAuthentication();
     
@@ -190,6 +193,24 @@ window.addEventListener('load', async () => {
     // Load leaderboard preview
     loadLeaderboardPreview();
 });
+
+// Wait for inkjs to be available
+async function waitForInkjs() {
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (typeof inkjs === 'undefined' && attempts < maxAttempts) {
+        console.log(`Waiting for inkjs to load... attempt ${attempts + 1}/${maxAttempts}`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        attempts++;
+    }
+    
+    if (typeof inkjs === 'undefined') {
+        throw new Error('inkjs library failed to load after multiple attempts');
+    }
+    
+    console.log('inkjs library loaded successfully');
+}
 
 // Check authentication status
 async function checkAuthentication() {
@@ -244,6 +265,12 @@ function updateUserDisplay() {
 async function loadStory() {
     try {
         console.log('Loading story.json...');
+        
+        // Check if inkjs is available
+        if (typeof inkjs === 'undefined') {
+            console.error('inkjs library not loaded');
+            throw new Error('Story engine (inkjs) failed to load. Please refresh the page.');
+        }
         
         // Try to fetch the story file
         const response = await fetch('story.json');
