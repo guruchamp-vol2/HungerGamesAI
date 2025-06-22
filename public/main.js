@@ -27,18 +27,98 @@ let konamiIndex = 0;
 let cheatActive = false;
 
 window.addEventListener('keydown', (e) => {
+    // Don't trigger on input fields
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+    }
+    
     if (e.key === konamiCode[konamiIndex]) {
         konamiIndex++;
+        console.log(`Konami progress: ${konamiIndex}/${konamiCode.length}`);
         if (konamiIndex === konamiCode.length) {
             cheatActive = true;
             konamiIndex = 0;
-            // Optionally, show a hint to type the next part
+            console.log('Cheat code activated! Type "Iamdevwin" to win.');
             showCheatHint();
         }
     } else {
         konamiIndex = 0;
     }
 });
+
+// Add global cheat code detection for typing "Iamdevwin"
+window.addEventListener('keydown', (e) => {
+    // Only check if cheat is active and not in input field
+    if (cheatActive && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        // Check if user is typing "Iamdevwin"
+        if (e.key === 'I' || e.key === 'i') {
+            checkCheatSequence('Iamdevwin');
+        }
+    }
+});
+
+let cheatSequence = '';
+function checkCheatSequence(target) {
+    cheatSequence += event.key.toLowerCase();
+    console.log(`Cheat sequence: ${cheatSequence}`);
+    
+    if (cheatSequence === target.toLowerCase()) {
+        console.log('CHEAT WIN ACTIVATED!');
+        activateCheatWin();
+        cheatSequence = '';
+        cheatActive = false;
+    } else if (!target.toLowerCase().startsWith(cheatSequence)) {
+        cheatSequence = '';
+    }
+}
+
+function activateCheatWin() {
+    const storyContainer = document.getElementById('storyContainer');
+    
+    // Create win message
+    const winText = document.createElement('p');
+    winText.className = 'fade-in';
+    winText.style.cssText = `
+        color: #6bcf7f;
+        font-weight: bold;
+        font-size: 1.2rem;
+        text-align: center;
+        padding: 20px;
+        background: rgba(107, 207, 127, 0.1);
+        border: 2px solid #6bcf7f;
+        border-radius: 10px;
+        margin: 20px 0;
+    `;
+    winText.textContent = '🎉 CHEAT ACTIVATED: INSTANT WIN! 🎉\nYou are the champion of the Hunger Games!';
+    
+    storyContainer.appendChild(winText);
+    storyContainer.scrollTop = storyContainer.scrollHeight;
+    
+    // Set story variables
+    if (story && story.variablesState) {
+        story.variablesState['instawin'] = true;
+        story.variablesState['health'] = 100;
+        story.variablesState['sponsor_points'] = 999;
+    }
+    
+    // Submit to leaderboard
+    submitLeaderboardEntry('cheat');
+    
+    // Show celebration
+    setTimeout(() => {
+        const celebration = document.createElement('p');
+        celebration.className = 'fade-in';
+        celebration.style.cssText = `
+            color: #ffd93d;
+            font-size: 1.1rem;
+            text-align: center;
+            margin: 10px 0;
+        `;
+        celebration.textContent = '🏆 Congratulations! You have won the Hunger Games! 🏆';
+        storyContainer.appendChild(celebration);
+        storyContainer.scrollTop = storyContainer.scrollHeight;
+    }, 1000);
+}
 
 function showCheatHint() {
     const hintPopup = document.createElement('div');
@@ -48,27 +128,54 @@ function showCheatHint() {
         left: 50%;
         transform: translate(-50%, -50%);
         background: rgba(20, 20, 20, 0.95);
-        border: 2px solid #ffd93d;
-        border-radius: 10px;
-        padding: 20px;
+        border: 3px solid #ffd93d;
+        border-radius: 15px;
+        padding: 30px;
         color: #ffd93d;
-        font-size: 1.2rem;
+        font-size: 1.4rem;
         text-align: center;
         z-index: 2000;
         backdrop-filter: blur(10px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
         animation: fadeIn 0.3s ease;
-        max-width: 400px;
-        line-height: 1.4;
+        max-width: 500px;
+        line-height: 1.5;
+        font-weight: bold;
     `;
-    hintPopup.textContent = "Cheat code activated! Type 'Iamdevwin' and press Enter.";
+    hintPopup.innerHTML = `
+        <div style="margin-bottom: 15px;">🎮 CHEAT CODE ACTIVATED! 🎮</div>
+        <div style="font-size: 1.1rem; margin-bottom: 20px;">Type <span style="color: #6bcf7f; font-family: monospace;">Iamdevwin</span> anywhere on the page to win!</div>
+        <button onclick="this.parentElement.remove()" style="
+            background: #ffd93d;
+            color: #1a1a1a;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+        ">Got it!</button>
+    `;
     document.body.appendChild(hintPopup);
+    
+    // Auto-remove after 8 seconds
     setTimeout(() => {
-        hintPopup.style.animation = 'fadeOut 0.3s ease';
-        setTimeout(() => {
-            document.body.removeChild(hintPopup);
-        }, 300);
-    }, 3000);
+        if (document.body.contains(hintPopup)) {
+            hintPopup.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => {
+                if (document.body.contains(hintPopup)) {
+                    document.body.removeChild(hintPopup);
+                }
+            }, 300);
+        }
+    }, 8000);
+}
+
+// Debug function to test cheat code (for development)
+function debugCheatCode() {
+    console.log('Debug: Activating cheat code...');
+    cheatActive = true;
+    showCheatHint();
 }
 
 // Initialize the application
@@ -283,22 +390,6 @@ function showFreeRoamMode() {
 async function handleFreeRoamAction(action) {
     const typingIndicator = document.getElementById('typingIndicator');
     const storyContainer = document.getElementById('storyContainer');
-    
-    // --- CHEAT CODE: KONAMI + Iamdevwin ---
-    if (cheatActive && action.trim() === 'Iamdevwin') {
-        story.variablesState['instawin'] = true;
-        // Optionally, set other win variables or stats
-        const winText = document.createElement('p');
-        winText.className = 'fade-in';
-        winText.style.color = '#6bcf7f';
-        winText.style.fontWeight = 'bold';
-        winText.textContent = 'CHEAT ACTIVATED: INSTANT WIN! You are the champion of the Hunger Games!';
-        storyContainer.appendChild(winText);
-        cheatActive = false;
-        // Optionally, submit to leaderboard here
-        submitLeaderboardEntry('cheat');
-        return;
-    }
     
     // Show typing indicator
     typingIndicator.style.display = 'block';
