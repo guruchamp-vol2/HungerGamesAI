@@ -197,10 +197,7 @@ window.addEventListener('load', async () => {
     // Check authentication first
     await checkAuthentication();
     
-    // Wait for inkjs with shorter timeout
-    await waitForInkjs();
-    
-    // Load the story
+    // Load the story immediately without waiting for inkjs
     await loadStory();
     
     // Set up event listeners
@@ -218,19 +215,21 @@ window.addEventListener('load', async () => {
 // Wait for inkjs to be available
 async function waitForInkjs() {
     let attempts = 0;
-    const maxAttempts = 5; // Reduced from 10 to 5
+    const maxAttempts = 3; // Reduced to 3 attempts
     
     while (typeof inkjs === 'undefined' && attempts < maxAttempts) {
         console.log(`Waiting for inkjs to load... attempt ${attempts + 1}/${maxAttempts}`);
-        await new Promise(resolve => setTimeout(resolve, 300)); // Reduced from 500ms to 300ms
+        await new Promise(resolve => setTimeout(resolve, 200)); // Reduced to 200ms
         attempts++;
     }
     
     if (typeof inkjs === 'undefined') {
-        throw new Error('inkjs library failed to load after multiple attempts');
+        console.log('inkjs not loaded, creating fallback story');
+        return false;
     }
     
     console.log('inkjs library loaded successfully');
+    return true;
 }
 
 // Check authentication status
@@ -309,12 +308,15 @@ function updateUserDisplay() {
 // Load the story
 async function loadStory() {
     try {
-        console.log('Loading story.json...');
+        console.log('Loading story...');
         
-        // Check if inkjs is available
-        if (typeof inkjs === 'undefined') {
-            console.error('inkjs library not loaded');
-            throw new Error('Story engine (inkjs) failed to load. Please refresh the page.');
+        // Try to wait for inkjs briefly
+        const inkjsLoaded = await waitForInkjs();
+        
+        if (!inkjsLoaded) {
+            // Create fallback story immediately
+            createFallbackStory();
+            return;
         }
         
         // Try to fetch the story file
@@ -375,83 +377,116 @@ async function loadStory() {
         
     } catch (error) {
         console.error('Error loading story:', error);
-        
-        // Create a simple working story as fallback
-        try {
-            console.log('Creating fallback story...');
-            const fallbackStory = {
-                inkVersion: 20,
-                root: [{
-                    "#n": "intro",
+        createFallbackStory();
+    }
+}
+
+// Create a simple working story as fallback
+function createFallbackStory() {
+    console.log('Creating fallback story...');
+    
+    // Create a simple story object
+    const fallbackStory = {
+        inkVersion: 20,
+        root: [{
+            "#n": "intro",
+            "c": [{
+                "#f": 1,
+                "c": ["Welcome to Panem. The Capitol watches. The Districts remember.\n\nBefore we begin, let's get to know you.\n\nWhat is your name?\n"]
+            }, {
+                "#n": "g-0",
+                "c": [{
+                    "#f": 2,
+                    "c": ["Enter your name"]
+                }]
+            }]
+        }],
+        listDefs: {},
+        variables: [
+            { "name": "health", "value": 100 },
+            { "name": "name", "value": "" },
+            { "name": "age", "value": 0 },
+            { "name": "district", "value": "" },
+            { "name": "weapon", "value": "" },
+            { "name": "inventory", "value": "" },
+            { "name": "sponsor_points", "value": 0 },
+            { "name": "training_score", "value": 0 },
+            { "name": "instawin", "value": false }
+        ],
+        knots: {
+            "intro": {
+                "c": [{
+                    "#f": 1,
+                    "c": ["Welcome to Panem. The Capitol watches. The Districts remember.\n\nBefore we begin, let's get to know you.\n\nWhat is your name?\n"]
+                }, {
+                    "#n": "g-0",
                     "c": [{
-                        "#f": 1,
-                        "c": ["Welcome to Panem. The Capitol watches. The Districts remember.\n\nBefore we begin, let's get to know you.\n\nWhat is your name?\n"]
-                    }, {
-                        "#n": "g-0",
-                        "c": [{
-                            "#f": 2,
-                            "c": ["Enter your name"]
-                        }]
+                        "#f": 2,
+                        "c": ["Enter your name"]
                     }]
-                }],
-                listDefs: {},
-                variables: [
-                    { "name": "health", "value": 100 },
-                    { "name": "name", "value": "" },
-                    { "name": "age", "value": 0 },
-                    { "name": "district", "value": "" },
-                    { "name": "weapon", "value": "" },
-                    { "name": "inventory", "value": "" },
-                    { "name": "sponsor_points", "value": 0 },
-                    { "name": "training_score", "value": 0 },
-                    { "name": "instawin", "value": false }
-                ],
-                knots: {
-                    "intro": {
-                        "c": [{
-                            "#f": 1,
-                            "c": ["Welcome to Panem. The Capitol watches. The Districts remember.\n\nBefore we begin, let's get to know you.\n\nWhat is your name?\n"]
-                        }, {
-                            "#n": "g-0",
-                            "c": [{
-                                "#f": 2,
-                                "c": ["Enter your name"]
-                            }]
-                        }]
-                    }
+                }]
+            }
+        }
+    };
+    
+    try {
+        if (typeof inkjs !== 'undefined') {
+            story = new inkjs.Story(fallbackStory);
+            console.log('Fallback story created successfully with inkjs');
+        } else {
+            // Create a mock story object if inkjs is not available
+            story = {
+                canContinue: true,
+                currentChoices: [{ text: "Enter your name" }],
+                variablesState: {
+                    "health": 100,
+                    "name": "",
+                    "age": 0,
+                    "district": "",
+                    "weapon": "",
+                    "inventory": "",
+                    "sponsor_points": 0,
+                    "training_score": 0,
+                    "instawin": false
+                },
+                Continue: function() {
+                    this.canContinue = false;
+                    return "Welcome to Panem. The Capitol watches. The Districts remember.\n\nBefore we begin, let's get to know you.\n\nWhat is your name?\n";
+                },
+                ChooseChoiceIndex: function(index) {
+                    console.log('Choice selected:', index);
+                    this.currentChoices = [];
                 }
             };
-            
-            story = new inkjs.Story(fallbackStory);
-            console.log('Fallback story created successfully');
-            
-            // Clear loading message and start story
-            const storyContainer = document.getElementById('storyContainer');
-            storyContainer.innerHTML = '';
-            continueStory();
-            
-        } catch (fallbackError) {
-            console.error('Fallback story creation failed:', fallbackError);
-            
-            // Show error message
-            const storyContainer = document.getElementById('storyContainer');
-            storyContainer.innerHTML = `
-                <div style="color: #ff6b6b; text-align: center; padding: 20px;">
-                    <h3>Story Loading Error</h3>
-                    <p>Error: ${error.message}</p>
-                    <p>Please refresh the page or try again later.</p>
-                    <button onclick="location.reload()" style="
-                        background: #ff6b6b;
-                        color: white;
-                        border: none;
-                        padding: 10px 20px;
-                        border-radius: 5px;
-                        cursor: pointer;
-                        margin-top: 10px;
-                    ">Refresh Page</button>
-                </div>
-            `;
+            console.log('Fallback story created successfully without inkjs');
         }
+        
+        // Clear loading message and start story
+        const storyContainer = document.getElementById('storyContainer');
+        storyContainer.innerHTML = '';
+        continueStory();
+        
+    } catch (fallbackError) {
+        console.error('Fallback story creation failed:', fallbackError);
+        
+        // Show error message
+        const storyContainer = document.getElementById('storyContainer');
+        storyContainer.innerHTML = `
+            <div style="color: #ff6b6b; text-align: center; padding: 20px;">
+                <h3>Story Loading Error</h3>
+                <p>Error: ${fallbackError.message}</p>
+                <p>Please refresh the page or try again later.</p>
+                <button onclick="location.reload()" style="
+                    background: #ff6b6b;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    margin-top: 10px;
+                ">Refresh Page</button>
+            </div>
+        `;
     }
 }
 
@@ -495,8 +530,11 @@ function setupEventListeners() {
 function continueStory() {
     // Get the current story text
     let storyText = '';
-    while (story.canContinue) {
-        storyText += story.Continue();
+    
+    if (story && story.canContinue) {
+        while (story.canContinue) {
+            storyText += story.Continue();
+        }
     }
     
     // Display the story text with fade-in animation
@@ -521,7 +559,7 @@ function displayChoices() {
     const choicesContainer = document.getElementById('choices');
     choicesContainer.innerHTML = '';
     
-    if (story.currentChoices.length > 0) {
+    if (story && story.currentChoices && story.currentChoices.length > 0) {
         currentChoices = story.currentChoices;
         
         story.currentChoices.forEach((choice, index) => {
@@ -540,7 +578,9 @@ function displayChoices() {
                     handleNameInput();
                 } else {
                     // Make the choice
-                    story.ChooseChoiceIndex(index);
+                    if (story.ChooseChoiceIndex) {
+                        story.ChooseChoiceIndex(index);
+                    }
                     continueStory();
                 }
             });
@@ -1218,18 +1258,23 @@ window.onclick = function(event) {
 // --- LEADERBOARD SUBMISSION ---
 async function submitLeaderboardEntry(type = 'normal') {
     try {
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        console.log('Submitting leaderboard entry...');
+        
+        // Get current user info
+        const username = currentUser ? currentUser.username : 'Anonymous';
         
         // Get character data from current story state
         const characterData = {
-            name: story.variablesState["name"] || "Anonymous",
-            district: story.variablesState["district"] || "Unknown",
-            age: story.variablesState["age"] || 0,
-            weapon: story.variablesState["weapon"] || "",
-            inventory: story.variablesState["inventory"] || "",
-            trainingScore: story.variablesState["training_score"] || 0,
-            sponsorPoints: story.variablesState["sponsor_points"] || 0
+            name: story && story.variablesState ? (story.variablesState["name"] || "Anonymous") : "Anonymous",
+            district: story && story.variablesState ? (story.variablesState["district"] || "Unknown") : "Unknown",
+            age: story && story.variablesState ? (story.variablesState["age"] || 0) : 0,
+            weapon: story && story.variablesState ? (story.variablesState["weapon"] || "") : "",
+            inventory: story && story.variablesState ? (story.variablesState["inventory"] || "") : "",
+            trainingScore: story && story.variablesState ? (story.variablesState["training_score"] || 0) : 0,
+            sponsorPoints: story && story.variablesState ? (story.variablesState["sponsor_points"] || 0) : 0
         };
+        
+        console.log('Submitting win for:', username, 'District:', characterData.district, 'Type:', type);
         
         const response = await fetch('/api/leaderboard', {
             method: 'POST',
@@ -1238,21 +1283,22 @@ async function submitLeaderboardEntry(type = 'normal') {
                 'Authorization': `Bearer ${localStorage.getItem('authToken')}`
             },
             body: JSON.stringify({
-                username: currentUser.username || 'Anonymous',
+                username: username,
                 district: characterData.district || 'Unknown',
                 winType: type
             })
         });
         
         if (response.ok) {
-            console.log('Win submitted to leaderboard');
+            console.log('✅ Win submitted to leaderboard successfully');
             // Refresh leaderboard preview
             loadLeaderboardPreview();
         } else {
-            console.error('Failed to submit to leaderboard');
+            const errorData = await response.json();
+            console.error('❌ Failed to submit to leaderboard:', errorData);
         }
     } catch (error) {
-        console.error('Error submitting to leaderboard:', error);
+        console.error('❌ Error submitting to leaderboard:', error);
     }
 }
 
