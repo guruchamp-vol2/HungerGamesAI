@@ -300,11 +300,16 @@ app.post('/api/free-roam', async (req, res) => {
         if (!openai) {
             // Fallback response when OpenAI is not configured
             const fallbackResponses = [
-                "You attempt the action, but the arena's unpredictable nature makes the outcome uncertain.",
-                "The action you try has mixed results in the harsh environment of the Hunger Games.",
-                "Your attempt to " + action + " meets with varying degrees of success in the arena.",
-                "The arena responds to your action in ways you couldn't have predicted.",
-                "You try to " + action + ", but the Games have a way of surprising everyone."
+                `You ${action.toLowerCase()}, and the arena responds with unexpected intensity. The Games are unpredictable, and every action carries weight.`,
+                `As you ${action.toLowerCase()}, you feel the eyes of the Capitol watching. The arena's harsh environment tests your resolve.`,
+                `Your attempt to ${action.toLowerCase()} meets with mixed results. In the Hunger Games, nothing is guaranteed, and survival requires constant adaptation.`,
+                `The arena's unforgiving nature makes ${action.toLowerCase()} a challenge. You must stay alert and resourceful to survive.`,
+                `You ${action.toLowerCase()}, and the Games remind you that every decision could be your last. The arena is both your battlefield and your prison.`,
+                `As you ${action.toLowerCase()}, you sense the presence of other tributes nearby. The Hunger Games demand both courage and caution.`,
+                `Your ${action.toLowerCase()} action reveals the true nature of the arena - beautiful yet deadly, promising yet perilous.`,
+                `The arena responds to your ${action.toLowerCase()} with the cold indifference of the Games themselves. Survival here requires more than just skill.`,
+                `You ${action.toLowerCase()}, and the Capitol's cameras capture every moment. In the Hunger Games, every action is a performance.`,
+                `Your attempt to ${action.toLowerCase()} shows the harsh reality of the arena. Here, every choice could mean the difference between life and death.`
             ];
             
             const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
@@ -446,6 +451,11 @@ app.get('/', (req, res) => {
 // Serve the authentication page
 app.get('/auth.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'auth.html'));
+});
+
+// Serve story.json explicitly
+app.get('/story.json', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'story.json'));
 });
 
 // Start server

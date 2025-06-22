@@ -243,13 +243,19 @@ function updateUserDisplay() {
 // Load the story
 async function loadStory() {
     try {
+        console.log('Loading story.json...');
         const response = await fetch('story.json');
+        console.log('Story fetch response status:', response.status);
+        
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
         const storyContent = await response.json();
+        console.log('Story content loaded successfully:', storyContent);
         
         story = new inkjs.Story(storyContent);
+        console.log('Ink story created successfully');
         
         // Initialize story variables if they don't exist
         if (story.variablesState) {
@@ -273,9 +279,11 @@ async function loadStory() {
             story.variablesState["training_score"] = story.variablesState["training_score"] || 0;
             story.variablesState["instawin"] = story.variablesState["instawin"] || false;
         }
+        console.log('Story variables initialized');
         
         // Start the story
         continueStory();
+        console.log('Story started successfully');
         
     } catch (error) {
         console.error('Error loading story:', error);
