@@ -919,7 +919,17 @@ window.onclick = function(event) {
 async function submitLeaderboardEntry(type = 'normal') {
     try {
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        const characterData = JSON.parse(localStorage.getItem('characterData') || '{}');
+        
+        // Get character data from current story state
+        const characterData = {
+            name: story.variablesState["name"] || "Anonymous",
+            district: story.variablesState["district"] || "Unknown",
+            age: story.variablesState["age"] || 0,
+            weapon: story.variablesState["weapon"] || "",
+            inventory: story.variablesState["inventory"] || "",
+            trainingScore: story.variablesState["training_score"] || 0,
+            sponsorPoints: story.variablesState["sponsor_points"] || 0
+        };
         
         const response = await fetch('/api/leaderboard', {
             method: 'POST',
