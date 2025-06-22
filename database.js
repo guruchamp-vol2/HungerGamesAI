@@ -1,8 +1,13 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
 // Create database connection
-const dbPath = path.join(__dirname, 'game.db');
+const persistentDir = process.env.DB_DIR || '/data';
+const persistentPath = path.join(persistentDir, 'game.db');
+const fallbackPath = path.join(__dirname, 'game.db');
+const dbPath = fs.existsSync(persistentDir) ? persistentPath : fallbackPath;
+console.log('Using SQLite DB at:', dbPath);
 const db = new sqlite3.Database(dbPath);
 
 // Initialize database tables

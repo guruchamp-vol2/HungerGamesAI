@@ -601,41 +601,61 @@ function continueStory() {
 function displayChoices() {
     const choicesContainer = document.getElementById('choices');
     choicesContainer.innerHTML = '';
-    
+
     if (story && story.currentChoices && story.currentChoices.length > 0) {
         currentChoices = story.currentChoices;
-        
-        story.currentChoices.forEach((choice, index) => {
-            const choiceElement = document.createElement('div');
-            choiceElement.className = 'choice fade-in';
-            choiceElement.textContent = choice.text;
-            choiceElement.addEventListener('click', () => {
-                // Add click animation
-                choiceElement.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    choiceElement.style.transform = '';
-                }, 150);
+
+        const nameChoice = story.currentChoices.find(c => c.text.includes('Enter your name'));
+
+        if (nameChoice) {
+            const nameForm = document.createElement('div');
+            nameForm.className = 'name-input-form fade-in';
+            nameForm.innerHTML = `
+                <input type="text" id="nameInput" placeholder="Enter your name..." autocomplete="off" style="width: 70%; padding: 10px; border-radius: 5px 0 0 5px; border: 1px solid #555; background: #333; color: #fff;">
+                <button id="nameSubmitBtn" style="padding: 10px; border-radius: 0 5px 5px 0; border: 1px solid #555; background: #444; color: #fff; cursor: pointer;">Continue</button>
+            `;
+            choicesContainer.appendChild(nameForm);
+
+            const nameInput = document.getElementById('nameInput');
+            const nameSubmitBtn = document.getElementById('nameSubmitBtn');
+
+            nameInput.focus();
+
+            const submitName = () => {
+                const name = nameInput.value.trim();
+                story.variablesState["name"] = name || "Tribute";
                 
-                // First, always tell the story engine which choice was selected.
-                story.ChooseChoiceIndex(index);
+                const choiceIndex = currentChoices.indexOf(nameChoice);
+                story.ChooseChoiceIndex(choiceIndex);
                 
-                // Special handling for name input
-                if (choice.text.includes('Enter your name')) {
-                    const name = prompt('Enter your tribute name:');
-                    if (name && name.trim()) {
-                        story.variablesState["name"] = name.trim();
-                    } else {
-                        story.variablesState["name"] = "Tribute"; // Default if prompt is empty
-                    }
-                }
-                
-                // Now, continue the story.
                 continueStory();
+            };
+
+            nameSubmitBtn.addEventListener('click', submitName);
+            nameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    submitName();
+                }
             });
-            choicesContainer.appendChild(choiceElement);
-        });
+
+        } else {
+            story.currentChoices.forEach((choice, index) => {
+                const choiceElement = document.createElement('div');
+                choiceElement.className = 'choice fade-in';
+                choiceElement.textContent = choice.text;
+                choiceElement.addEventListener('click', () => {
+                    choiceElement.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        choiceElement.style.transform = '';
+                    }, 150);
+
+                    story.ChooseChoiceIndex(index);
+                    continueStory();
+                });
+                choicesContainer.appendChild(choiceElement);
+            });
+        }
     } else {
-        // No choices means we're in free roam mode
         showFreeRoamMode();
     }
 }
