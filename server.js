@@ -297,6 +297,9 @@ app.post('/api/free-roam', async (req, res) => {
     try {
         const { action, playerStats, storyContext } = req.body;
         
+        console.log(`Free roam action: ${action}`);
+        console.log(`Player stats:`, playerStats);
+        
         if (!openai) {
             // Fallback response when OpenAI is not configured
             const fallbackResponses = [
@@ -313,25 +316,27 @@ app.post('/api/free-roam', async (req, res) => {
             ];
             
             const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+            console.log('Using fallback response (no OpenAI)');
             return res.json({ response: randomResponse });
         }
         
         const prompt = `You are narrating a Hunger Games interactive story. The player is in the arena and has typed: "${action}"
 
 Player Stats:
-- Name: ${playerStats.name}
-- District: ${playerStats.district}
-- Age: ${playerStats.age}
-- Health: ${playerStats.health}
-- Weapon: ${playerStats.weapon}
-- Inventory: ${playerStats.inventory}
-- Training Score: ${playerStats.trainingScore}
-- Sponsor Points: ${playerStats.sponsorPoints} (hidden from player)
+- Name: ${playerStats.name || 'Tribute'}
+- District: ${playerStats.district || 'Unknown'}
+- Age: ${playerStats.age || 0}
+- Health: ${playerStats.health || 100}
+- Weapon: ${playerStats.weapon || 'None'}
+- Inventory: ${playerStats.inventory || 'Empty'}
+- Training Score: ${playerStats.trainingScore || 0}
+- Sponsor Points: ${playerStats.sponsorPoints || 0} (hidden from player)
 
-Story Context: ${storyContext}
+Story Context: ${storyContext || 'You are in the Hunger Games arena. The Games have begun and you must survive. Other tributes are hunting you, and you need to find food, water, and shelter while avoiding danger.'}
 
-Write a 2-3 sentence response describing what happens when the player tries this action. Make it immersive, dramatic, and appropriate for the Hunger Games setting. The response should be engaging and move the story forward.`;
+Write a 2-3 sentence response describing what happens when the player tries this action. Make it immersive, dramatic, and appropriate for the Hunger Games setting. The response should be engaging and move the story forward. Keep it concise but impactful.`;
 
+        console.log('Sending request to OpenAI...');
         const completion = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
             messages: [{ role: "user", content: prompt }],
@@ -340,13 +345,18 @@ Write a 2-3 sentence response describing what happens when the player tries this
         });
 
         const response = completion.choices[0].message.content.trim();
+        console.log('OpenAI response received:', response);
         res.json({ response });
 
     } catch (error) {
         console.error('GPT API error:', error);
+        
+        // Fallback response on error
+        const fallbackResponse = `You ${action.toLowerCase()}, but something unexpected happens in the arena. The Games are full of surprises, and you must adapt quickly to survive.`;
+        
         res.status(500).json({ 
-            error: 'Failed to generate response',
-            fallback: "You attempt the action, but something unexpected happens in the arena."
+            error: 'Failed to generate AI response',
+            response: fallbackResponse
         });
     }
 });

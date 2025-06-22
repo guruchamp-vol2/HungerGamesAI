@@ -459,17 +459,35 @@ async function handleFreeRoamAction(action) {
         if (response.ok) {
             const data = await response.json();
             
+            // Display the AI response
+            const aiResponseText = document.createElement('p');
+            aiResponseText.className = 'fade-in';
+            aiResponseText.style.color = '#e0e0e0';
+            aiResponseText.style.lineHeight = '1.6';
+            aiResponseText.textContent = data.response;
+            storyContainer.appendChild(aiResponseText);
+            
             // Set the GPT response in the story
             story.variablesState["gpt_response"] = data.response;
-            
-            // Continue the story to process the action
-            continueStory();
             
             // Update character stats after action
             updateCharacterStats();
             
         } else {
-            throw new Error('Failed to get AI response');
+            const errorData = await response.json();
+            console.error('Server error:', errorData);
+            
+            // Display error response if available
+            if (errorData.response) {
+                const errorResponseText = document.createElement('p');
+                errorResponseText.className = 'fade-in';
+                errorResponseText.style.color = '#e0e0e0';
+                errorResponseText.style.lineHeight = '1.6';
+                errorResponseText.textContent = errorData.response;
+                storyContainer.appendChild(errorResponseText);
+            } else {
+                throw new Error('Failed to get AI response');
+            }
         }
         
     } catch (error) {
