@@ -596,12 +596,16 @@ function displayChoices() {
 function handleNameInput() {
     const name = prompt('Enter your tribute name:');
     if (name && name.trim()) {
-        story.variablesState["name"] = name.trim();
+        if (story && story.variablesState) {
+            story.variablesState["name"] = name.trim();
+        }
         // Continue to age selection
         continueStory();
     } else {
         // If no name entered, use default
-        story.variablesState["name"] = "Tribute";
+        if (story && story.variablesState) {
+            story.variablesState["name"] = "Tribute";
+        }
         continueStory();
     }
 }
@@ -1274,7 +1278,17 @@ async function submitLeaderboardEntry(type = 'normal') {
             sponsorPoints: story && story.variablesState ? (story.variablesState["sponsor_points"] || 0) : 0
         };
         
-        console.log('Submitting win for:', username, 'District:', characterData.district, 'Type:', type);
+        // Determine win type
+        let winType = 'normal';
+        if (type === 'cheat') {
+            winType = 'Cheat Win';
+        } else if (story && story.variablesState && story.variablesState["instawin"]) {
+            winType = 'Cheat Win';
+        } else {
+            winType = 'Hunger Games Champion';
+        }
+        
+        console.log('Submitting win for:', username, 'District:', characterData.district, 'Type:', winType);
         
         const response = await fetch('/api/leaderboard', {
             method: 'POST',
@@ -1285,7 +1299,7 @@ async function submitLeaderboardEntry(type = 'normal') {
             body: JSON.stringify({
                 username: username,
                 district: characterData.district || 'Unknown',
-                winType: type
+                winType: winType
             })
         });
         
@@ -1342,7 +1356,7 @@ function displayLeaderboardList(leaderboard) {
         
         const rank = document.createElement('div');
         rank.className = 'leaderboard-rank';
-        rank.textContent = `#${index + 1} Winner`;
+        rank.textContent = `#${index + 1} Champion`;
         
         const username = document.createElement('div');
         username.className = 'leaderboard-username';
@@ -1352,8 +1366,9 @@ function displayLeaderboardList(leaderboard) {
         details.className = 'leaderboard-details';
         details.innerHTML = `
             <div>District: ${entry.district || 'Unknown'}</div>
-            <div>Win Type: <span class="win-type">${entry.win_type}</span></div>
-            <div>Date: ${new Date(entry.created_at).toLocaleDateString()}</div>
+            <div>Wins: <span class="win-count">${entry.wins}</span></div>
+            <div>Last Win: ${new Date(entry.last_win).toLocaleDateString()}</div>
+            <div>Win Types: <span class="win-types">${entry.win_types || 'Unknown'}</span></div>
         `;
         
         leaderboardItem.appendChild(rank);
@@ -1396,7 +1411,7 @@ function displayLeaderboardPreview(leaderboard) {
             <div style="margin-bottom: 5px; font-size: 0.75rem;">
                 <span style="color: #ffd93d;">#${index + 1}</span> 
                 <span style="color: #e0e0e0;">${entry.username}</span>
-                <br><span style="color: #6bcf7f; font-size: 0.7rem;">${entry.win_type}</span>
+                <br><span style="color: #6bcf7f; font-size: 0.7rem;">${entry.wins} wins</span>
             </div>
         `;
     });

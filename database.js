@@ -369,7 +369,16 @@ const leaderboardDB = {
     getTop: (limit = 20) => {
         return new Promise((resolve, reject) => {
             db.all(
-                'SELECT * FROM leaderboard ORDER BY created_at DESC LIMIT ?',
+                `SELECT 
+                    username,
+                    district,
+                    COUNT(*) as wins,
+                    MAX(created_at) as last_win,
+                    GROUP_CONCAT(win_type) as win_types
+                FROM leaderboard 
+                GROUP BY username, district
+                ORDER BY wins DESC, last_win DESC
+                LIMIT ?`,
                 [limit],
                 (err, rows) => {
                     if (err) {
