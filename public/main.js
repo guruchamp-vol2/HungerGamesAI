@@ -265,6 +265,7 @@ function animateHealthBar(from, to) {
 // Show hint
 function showHint() {
     const hints = [
+        // Basic survival actions
         "Try typing 'search water' to find water sources",
         "Type 'hide' to find cover and avoid detection",
         "Use 'attack' to engage with other tributes",
@@ -274,7 +275,49 @@ function showHint() {
         "Use 'build shelter' to create a safe place to rest",
         "Try 'set trap' to catch food or defend your area",
         "Type 'hunt' to find food in the wilderness",
-        "Use 'climb tree' to get a better view of your surroundings"
+        "Use 'climb tree' to get a better view of your surroundings",
+        
+        // New massive update actions
+        "Try 'craft weapon' to fashion tools from materials",
+        "Type 'scout area' to survey for threats and resources",
+        "Use 'rest' to recover energy and health",
+        "Try 'make fire' for warmth and cooking",
+        "Type 'search supplies' to scavenge for useful items",
+        "Use 'defend position' to fortify your location",
+        "Try 'negotiate' to form alliances with other tributes",
+        "Type 'sabotage' to damage enemy supplies",
+        "Use 'heal wounds' to treat your injuries",
+        "Try 'create distraction' to escape or gain advantage",
+        "Type 'study terrain' to find strategic advantages",
+        "Use 'signal allies' to communicate with potential friends",
+        "Try 'poison supplies' to eliminate competition",
+        "Type 'build weapon' to construct sophisticated tools",
+        "Use 'establish base' to create a permanent home",
+        "Try 'gather intelligence' to spy on other tributes",
+        "Type 'create map' to plan your strategy",
+        "Use 'train skills' to improve your abilities",
+        "Try 'barter' to trade with other tributes",
+        "Type 'create armor' to fashion protective gear",
+        "Use 'establish perimeter' to set up defenses",
+        "Try 'analyze weather' to predict changes",
+        "Type 'create medicine' to brew healing potions",
+        "Use 'build bridge' to cross difficult terrain",
+        "Try 'create camouflage' to hide better",
+        "Type 'establish lookout' to monitor activity",
+        "Use 'create decoy' to mislead enemies",
+        "Try 'study wildlife' to learn about local animals",
+        "Type 'create alarm' to set up warning systems",
+        "Use 'build raft' to cross water obstacles",
+        "Try 'create signal' to communicate with allies",
+        "Type 'establish cache' to create hidden supplies",
+        "Use 'create diversion' to orchestrate complex plans",
+        "Try 'build catapult' to construct siege weapons",
+        "Type 'create poison' to develop deadly toxins",
+        "Use 'establish network' to create a spy network",
+        "Try 'build fortress' to construct a heavily fortified base",
+        "Type 'create army' to recruit and organize other tributes",
+        "Use 'establish kingdom' to create a mini-empire",
+        "Try 'create rebellion' to lead against the Capitol"
     ];
     
     const randomHint = hints[Math.floor(Math.random() * hints.length)];
@@ -297,18 +340,20 @@ function showHint() {
         backdrop-filter: blur(10px);
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         animation: fadeIn 0.3s ease;
+        max-width: 400px;
+        line-height: 1.4;
     `;
     hintPopup.textContent = randomHint;
     
     document.body.appendChild(hintPopup);
     
-    // Remove hint after 3 seconds
+    // Remove hint after 4 seconds
     setTimeout(() => {
         hintPopup.style.animation = 'fadeOut 0.3s ease';
         setTimeout(() => {
             document.body.removeChild(hintPopup);
         }, 300);
-    }, 3000);
+    }, 4000);
 }
 
 // Add fadeOut animation to CSS
