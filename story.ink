@@ -199,13 +199,11 @@ You stand on the tribute platform. 60 seconds until start.
 === cornucopia_choice ===
 The horn sounds.
 
-* Run for the Cornucopia to grab supplies  
-    You dodge attacks and grab a backpack. Inside: bread, knife, water.  
-    ~ inventory = "knife, bread, water"
+* Run for the Cornucopia to grab supplies
     The horn blares and chaos erupts. You sprint toward the Cornucopia, dodging between other tributes. You see several fights break out around you as tributes battle for the best supplies. You manage to grab a backpack and quickly retreat, avoiding the bloodbath. Inside the backpack, you find bread, a knife, and a water bottle. Not much, but it's a start.
+    ~ inventory = "knife, bread, water"
     -> arena_intro
-* Sprint into the woods  
-    You flee into the trees, avoiding the bloodbath.
+* Sprint into the woods
     The horn sounds and you immediately turn and run toward the forest. Behind you, you hear screams and the sounds of fighting as tributes battle over the supplies at the Cornucopia. You don't look back, focusing only on putting distance between yourself and the bloodbath. The trees provide cover as you disappear into the wilderness.
     -> arena_intro
 
