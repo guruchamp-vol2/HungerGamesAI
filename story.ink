@@ -26,50 +26,82 @@ Welcome to Panem. The Capitol watches. The Districts remember.
 Before we begin, let's get to know you.
 
 What is your name?
-* My name is Katniss
-    ~ name = "Katniss"
-    -> ask_age
-* My name is Peeta
-    ~ name = "Peeta"
-    -> ask_age
-* My name is Gale
-    ~ name = "Gale"
-    -> ask_age
-* My name is Prim
-    ~ name = "Prim"
+* Enter your name
+    ~ name = "Tribute"
     -> ask_age
 
 === ask_age ===
 How old are you?
+* I'm 12 years old
+    ~ age = 12
+    -> ask_district
+* I'm 13 years old
+    ~ age = 13
+    -> ask_district
+* I'm 14 years old
+    ~ age = 14
+    -> ask_district
+* I'm 15 years old
+    ~ age = 15
+    -> ask_district
 * I'm 16 years old
     ~ age = 16
     -> ask_district
 * I'm 17 years old
     ~ age = 17
     -> ask_district
-* I'm 15 years old
-    ~ age = 15
-    -> ask_district
-* I'm 14 years old
-    ~ age = 14
+* I'm 18 years old
+    ~ age = 18
     -> ask_district
 
 === ask_district ===
 Which district are you from?
-* District 12 - Coal mining
-    ~ district = "12"
+* District 1 - Luxury Items
+    ~ district = "1"
     Your name is {name}, age {age}, from District {district}.
     -> reaping_intro
-* District 11 - Agriculture
-    ~ district = "11"
+* District 2 - Masonry & Defense
+    ~ district = "2"
+    Your name is {name}, age {age}, from District {district}.
+    -> reaping_intro
+* District 3 - Technology
+    ~ district = "3"
+    Your name is {name}, age {age}, from District {district}.
+    -> reaping_intro
+* District 4 - Fishing
+    ~ district = "4"
+    Your name is {name}, age {age}, from District {district}.
+    -> reaping_intro
+* District 5 - Power
+    ~ district = "5"
+    Your name is {name}, age {age}, from District {district}.
+    -> reaping_intro
+* District 6 - Transportation
+    ~ district = "6"
     Your name is {name}, age {age}, from District {district}.
     -> reaping_intro
 * District 7 - Lumber
     ~ district = "7"
     Your name is {name}, age {age}, from District {district}.
     -> reaping_intro
-* District 4 - Fishing
-    ~ district = "4"
+* District 8 - Textiles
+    ~ district = "8"
+    Your name is {name}, age {age}, from District {district}.
+    -> reaping_intro
+* District 9 - Grain
+    ~ district = "9"
+    Your name is {name}, age {age}, from District {district}.
+    -> reaping_intro
+* District 10 - Livestock
+    ~ district = "10"
+    Your name is {name}, age {age}, from District {district}.
+    -> reaping_intro
+* District 11 - Agriculture
+    ~ district = "11"
+    Your name is {name}, age {age}, from District {district}.
+    -> reaping_intro
+* District 12 - Coal Mining
+    ~ district = "12"
     Your name is {name}, age {age}, from District {district}.
     -> reaping_intro
 

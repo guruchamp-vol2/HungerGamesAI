@@ -100,15 +100,34 @@ function displayChoices() {
                     choiceElement.style.transform = '';
                 }, 150);
                 
-                // Make the choice
-                story.ChooseChoiceIndex(index);
-                continueStory();
+                // Handle custom name input
+                if (choice.text === 'Enter your name') {
+                    handleNameInput();
+                } else {
+                    // Make the choice
+                    story.ChooseChoiceIndex(index);
+                    continueStory();
+                }
             });
             choicesContainer.appendChild(choiceElement);
         });
     } else {
         // No choices means we're in free roam mode
         showFreeRoamMode();
+    }
+}
+
+// Handle custom name input
+function handleNameInput() {
+    const name = prompt('Enter your tribute name:');
+    if (name && name.trim()) {
+        story.variablesState["name"] = name.trim();
+        // Continue to age selection
+        continueStory();
+    } else {
+        // If no name entered, use default
+        story.variablesState["name"] = "Tribute";
+        continueStory();
     }
 }
 
