@@ -2,12 +2,27 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
+// Database path logic
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER;
+const persistentDataDir = '/data';
+const dbName = 'game.db';
+let dbPath;
+
+if (isProduction) {
+    // In production (like on Render), use the persistent disk directory.
+    if (!fs.existsSync(persistentDataDir)) {
+        fs.mkdirSync(persistentDataDir, { recursive: true });
+    }
+    dbPath = path.join(persistentDataDir, dbName);
+} else {
+    // In development, use a local file.
+    dbPath = path.join(__dirname, dbName);
+}
+
+console.log(`[DB] Production mode: ${isProduction}`);
+console.log(`[DB] Using SQLite DB at: ${dbPath}`);
+
 // Create database connection
-const persistentDir = process.env.DB_DIR || '/data';
-const persistentPath = path.join(persistentDir, 'game.db');
-const fallbackPath = path.join(__dirname, 'game.db');
-const dbPath = fs.existsSync(persistentDir) ? persistentPath : fallbackPath;
-console.log('Using SQLite DB at:', dbPath);
 const db = new sqlite3.Database(dbPath);
 
 // Initialize database tables
