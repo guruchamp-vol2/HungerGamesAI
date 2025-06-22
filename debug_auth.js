@@ -8,7 +8,7 @@ async function debugAuth() {
         
         console.log('\n=== Testing User Creation ===');
         const testUsername = 'Dev';
-        const testPassword = 'password123';
+        const testPassword = 'IAmDev$$$!@#';
         
         // Check if user already exists
         const existingUser = await userDB.getUserByUsername(testUsername);
@@ -24,6 +24,11 @@ async function debugAuth() {
             // Test with different password
             const isInvalid = await bcrypt.compare('wrongpassword', existingUser.password_hash);
             console.log('Wrong password test:', isInvalid ? 'FAIL' : 'PASS');
+            
+            // Let's create a new hash with the correct password to see if it matches
+            const newHash = await bcrypt.hash(testPassword, 10);
+            console.log('New hash for correct password:', newHash);
+            console.log('Hash comparison:', existingUser.password_hash === newHash ? 'MATCH' : 'NO MATCH');
             
         } else {
             console.log(`User '${testUsername}' does not exist, creating...`);

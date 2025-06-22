@@ -372,6 +372,50 @@ app.get('/api/leaderboard', async (req, res) => {
     }
 });
 
+// Password reset endpoint (for debugging)
+app.post('/api/admin/reset-password', async (req, res) => {
+    try {
+        const { username, newPassword } = req.body;
+        
+        if (!username || !newPassword) {
+            return res.status(400).json({ error: 'Username and new password are required' });
+        }
+        
+        // Get user
+        const user = await userDB.getUserByUsername(username);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Hash new password
+        const newPasswordHash = await bcrypt.hash(newPassword, 10);
+        
+        // Update password in database
+        await new Promise((resolve, reject) => {
+            const db = require('./database').db;
+            db.run(
+                'UPDATE users SET password_hash = ? WHERE id = ?',
+                [newPasswordHash, user.id],
+                (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                }
+            );
+        });
+        
+        console.log(`Password reset for user '${username}'`);
+        
+        res.json({ 
+            message: 'Password reset successfully',
+            username: username
+        });
+        
+    } catch (error) {
+        console.error('Password reset error:', error);
+        res.status(500).json({ error: 'Failed to reset password' });
+    }
+});
+
 // Admin route to check if user exists (for debugging)
 app.get('/api/admin/check-user/:username', async (req, res) => {
     try {
