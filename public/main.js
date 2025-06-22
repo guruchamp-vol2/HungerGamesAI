@@ -5,10 +5,10 @@ async function start() {
   const storyContent = await fetch("story.json").then(r => r.json());
   story = new inkjs.Story(storyContent);
 
-  // Force story to begin at the "intro" knot
+  // Start at the intro knot
   story.ChoosePathString("intro");
 
-  // Bind external command function
+  // Bind external function for command input
   story.BindExternalFunction("bridge_prompt", () => {
     const cmd = prompt("Type an action (e.g. search water, hide, attack):");
     return cmd ? cmd.toLowerCase() : "";
