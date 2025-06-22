@@ -109,17 +109,17 @@ app.post('/api/login', async (req, res) => {
         // Get user
         const user = await userDB.getUserByUsername(username);
         if (!user) {
-            console.log(`User '${username}' not found in database`);
+            console.log(`[Login Auth] Failure: User '${username}' not found in database.`);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        console.log(`User '${username}' found, ID: ${user.id}`);
+        console.log(`[Login Auth] Success: User '${username}' found. Hashed password from DB: ${user.password_hash}`);
 
         // Check password
         const validPassword = await bcrypt.compare(password, user.password_hash);
-        console.log(`Password validation for '${username}': ${validPassword ? 'PASS' : 'FAIL'}`);
         
         if (!validPassword) {
+            console.log(`[Login Auth] Failure: Password validation failed for user '${username}'.`);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 

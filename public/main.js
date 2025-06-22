@@ -626,8 +626,16 @@ function displayChoices() {
                 story.variablesState["name"] = name || "Tribute";
                 
                 const choiceIndex = currentChoices.indexOf(nameChoice);
+                console.log(`[Debug] Submitting name: '${name}'. Found choice at index: ${choiceIndex}`);
+                
+                if (choiceIndex === -1) {
+                    console.error("[Debug] CRITICAL: Could not find the 'Enter your name' choice in the current choices array. Halting.", currentChoices);
+                    return;
+                }
+
                 story.ChooseChoiceIndex(choiceIndex);
                 
+                console.log("[Debug] Name submitted. Continuing story...");
                 continueStory();
             };
 
@@ -649,7 +657,10 @@ function displayChoices() {
                         choiceElement.style.transform = '';
                     }, 150);
 
+                    console.log(`[Debug] Choice clicked: '${choice.text}' at index: ${index}`);
                     story.ChooseChoiceIndex(index);
+
+                    console.log("[Debug] Choice selected. Continuing story...");
                     continueStory();
                 });
                 choicesContainer.appendChild(choiceElement);
