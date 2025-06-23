@@ -44,6 +44,26 @@ initializeDatabase().then(() => {
     console.error('Database initialization failed:', err);
 });
 
+// --- Development Helper: Auto-create 'Dev' user ---
+async function ensureDevUserExists() {
+    try {
+        const devUser = await userDB.getUserByUsername('Dev');
+        if (!devUser) {
+            console.log('[Dev Helper] "Dev" user not found. Creating...');
+            const passwordHash = await bcrypt.hash('IAmDev$$$123', 10);
+            await userDB.createUser('Dev', passwordHash, 'dev@example.com');
+            console.log('[Dev Helper] "Dev" user created successfully.');
+        } else {
+            console.log('[Dev Helper] "Dev" user already exists.');
+        }
+    } catch (error) {
+        console.error('[Dev Helper] Error ensuring dev user exists:', error);
+    }
+}
+// Call this after DB initialization
+initializeDatabase().then(ensureDevUserExists);
+// --- End Development Helper ---
+
 // OpenAI configuration
 let openai = null;
 if (process.env.OPENAI_API_KEY) {
