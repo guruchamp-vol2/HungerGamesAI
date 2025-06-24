@@ -323,7 +323,7 @@ async function loadStory() {
         console.log('Story content loaded successfully:', storyContent);
         
         // Validate story structure
-        if (!storyContent.inkVersion || !storyContent.root || !storyContent.knots) {
+        if (!storyContent.inkVersion || !storyContent.root) {
             throw new Error('Invalid story format: missing required fields');
         }
         
