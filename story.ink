@@ -243,7 +243,8 @@ You are now inside the arena. The Games have begun.
 -> free_roam
 
 === free_roam ===
-You pause for a moment, considering your next move.
+~ temp cmd = bridge_prompt()
+~ action = cmd
 -> process_action
 
 === process_action ===
