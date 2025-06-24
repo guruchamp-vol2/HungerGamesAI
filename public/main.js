@@ -327,7 +327,7 @@ async function loadStory() {
             throw new Error('Invalid story format: missing required fields');
         }
         
-        story = new inkjs.Story(storyContent);
+  story = new inkjs.Story(storyContent);
         console.log('Ink story created successfully');
         
         // Initialize story variables if they don't exist
@@ -575,7 +575,7 @@ function continueStory() {
     let storyText = '';
     
     if (story && story.canContinue) {
-        while (story.canContinue) {
+  while (story.canContinue) {
             storyText += story.Continue();
         }
     }
@@ -636,8 +636,8 @@ function displayChoices() {
                 story.ChooseChoiceIndex(choiceIndex);
                 
                 console.log("[Debug] Name submitted. Continuing story...");
-                continueStory();
-            };
+      continueStory();
+    };
 
             nameSubmitBtn.addEventListener('click', submitName);
             nameInput.addEventListener('keypress', (e) => {

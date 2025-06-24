@@ -27,7 +27,7 @@ Before we begin, let's get to know you.
 
 What is your name?
 * Enter your name
-    -> ask_age
+-> ask_age
 
 === ask_age ===
 How old are you?
@@ -44,7 +44,7 @@ How old are you?
     ~ age = 15
     -> ask_district
 * I'm 16 years old
-    ~ age = 16
+~ age = 16
     -> ask_district
 * I'm 17 years old
     ~ age = 17
@@ -80,9 +80,9 @@ Which district are you from?
     Your name is {name}, age {age}, from District {district}.
     -> reaping_intro
 * District 7 - Lumber
-    ~ district = "7"
-    Your name is {name}, age {age}, from District {district}.
-    -> reaping_intro
+~ district = "7"
+Your name is {name}, age {age}, from District {district}.
+-> reaping_intro
 * District 8 - Textiles
     ~ district = "8"
     Your name is {name}, age {age}, from District {district}.
@@ -101,8 +101,8 @@ Which district are you from?
     -> reaping_intro
 * District 12 - Coal Mining
     ~ district = "12"
-    Your name is {name}, age {age}, from District {district}.
-    -> reaping_intro
+Your name is {name}, age {age}, from District {district}.
+-> reaping_intro
 
 === reaping_intro ===
 The Reaping Day begins. Crowds form. Tension rises.
@@ -129,7 +129,7 @@ Your mentor pulls you into a dark corner.
     ~ stealth += 10
     ~ sponsor_points += 20
     Your mentor gives you a bundle containing rope, wire, and various small tools. "This is for setting traps and moving quietly," she says. "The rope can be used for climbing, binding, or even as a weapon. The wire is perfect for snares." You nod, understanding the value of stealth in the arena.
-    -> training_start
+-> training_start
 
 === training_start ===
 You enter the Capitol training center.
@@ -153,7 +153,7 @@ Day 1 of training. Choose your activity:
     ~ awareness += 10
     ~ sponsor_points += 30
     You spend the day watching the other tributes train, studying their strengths and weaknesses. You notice patterns in their movements, their preferred weapons, and how they interact with each other. Some form alliances, others work alone. You file away every detail, knowing this information could be crucial in the arena.
-    -> train_day_2
+-> train_day_2
 
 === train_day_2 ===
 Day 2 of training. Choose again:
@@ -172,14 +172,14 @@ Day 2 of training. Choose again:
     ~ strength += 10
     ~ sponsor_points += 15
     You spend hours learning hand-to-hand combat techniques - punches, kicks, blocks, and throws. Your instructor emphasizes efficiency and using your opponent's strength against them. "In the arena, you'll need to fight dirty to survive," he says. You practice until your muscles ache and your reflexes become sharper.
-    -> interview
+-> interview
 
 === interview ===
 Your private interview with the Gamemakers begins.
 
-What is your weapon specialty?
+What is your weapon specialty?  
 * Spear fighting
-    ~ specialty = "spear"
+~ specialty = "spear"
     ~ sponsor_points += 20
     They assign you a training score you hope will win sponsors…
     -> training_score_scene
@@ -196,7 +196,7 @@ What is your weapon specialty?
 * Hand-to-hand combat
     ~ specialty = "combat"
     ~ sponsor_points += 10
-    They assign you a training score you hope will win sponsors…
+They assign you a training score you hope will win sponsors…
     -> training_score_scene
 
 === training_score_scene ===
@@ -216,7 +216,7 @@ Your training score is: {training_score}
     The silence is deafening. Your low score will make it difficult to attract sponsors.
 
 * Continue to the platform
-    -> platform_start
+-> platform_start
 
 === platform_start ===
 You stand on the tribute platform. 60 seconds until start.
@@ -230,13 +230,13 @@ You stand on the tribute platform. 60 seconds until start.
 === cornucopia_choice ===
 The horn sounds.
 
-* Run for the Cornucopia to grab supplies
+* Run for the Cornucopia to grab supplies  
     The horn blares and chaos erupts. You sprint toward the Cornucopia, dodging between other tributes. You see several fights break out around you as tributes battle for the best supplies. You manage to grab a backpack and quickly retreat, avoiding the bloodbath. Inside the backpack, you find bread, a knife, and a water bottle. Not much, but it's a start.
     ~ inventory = "knife, bread, water"
     -> arena_intro
-* Sprint into the woods
+* Sprint into the woods  
     The horn sounds and you immediately turn and run toward the forest. Behind you, you hear screams and the sounds of fighting as tributes battle over the supplies at the Cornucopia. You don't look back, focusing only on putting distance between yourself and the bloodbath. The trees provide cover as you disappear into the wilderness.
-    -> arena_intro
+-> arena_intro
 
 === arena_intro ===
 You are now inside the arena. The Games have begun.
@@ -461,4 +461,4 @@ You pause for a moment, considering your next move.
 - else
     {gpt_response}
     ~ sponsor_points += 3
-    -> free_roam
+-> free_roam
