@@ -23,5 +23,20 @@
       ]
     }
   ],
-  "listDefs": {}
+  "listDefs": {},
+  "knots": {
+    "intro": [
+      [
+        "^Welcome to Panem. The Capitol watches. The Districts remember.",
+        "\n",
+        "^What is your name?",
+        "\n",
+        [
+          "ev",{"^->":"intro.0.4.$r1"},{"temp=":"$r"},"str",{"->":".^.s"},[{"#n":"$r1"}],"/str","/ev",{"*":".^.^.c-0","flg":18},{"s":["^Enter your name",{"->":"$r","var":true},null]}
+        ],
+        {"c-0": ["ev",{"^->":"intro.0.c-0.$r2"},"/ev",{"temp=":"$r"},{"->":".^.^.4.s"},[{"#n":"$r2"}],"\n","^Thank you! Your journey begins...","\n",{"->":"END"}]}
+      ],
+      null
+    ]
+  }
 } 

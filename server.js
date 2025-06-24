@@ -473,6 +473,49 @@ app.get('/api/admin/check-user/:username', async (req, res) => {
     }
 });
 
+// Simple Dev user reset endpoint
+app.post('/api/admin/reset-dev', async (req, res) => {
+    try {
+        console.log('Resetting Dev user...');
+        
+        // Check if Dev user exists
+        let devUser = await userDB.getUserByUsername('Dev');
+        
+        if (devUser) {
+            console.log('Dev user exists, updating password...');
+            // Update password
+            const newPasswordHash = await bcrypt.hash('IAmDev$$$123', 10);
+            await new Promise((resolve, reject) => {
+                const db = require('./database').db;
+                db.run(
+                    'UPDATE users SET password_hash = ? WHERE username = ?',
+                    [newPasswordHash, 'Dev'],
+                    (err) => {
+                        if (err) reject(err);
+                        else resolve();
+                    }
+                );
+            });
+        } else {
+            console.log('Dev user does not exist, creating...');
+            // Create new Dev user
+            const passwordHash = await bcrypt.hash('IAmDev$$$123', 10);
+            await userDB.createUser('Dev', passwordHash, 'dev@example.com');
+        }
+        
+        console.log('Dev user reset successful');
+        res.json({ 
+            message: 'Dev user reset successfully',
+            username: 'Dev',
+            password: 'IAmDev$$$123'
+        });
+        
+    } catch (error) {
+        console.error('Dev user reset error:', error);
+        res.status(500).json({ error: 'Failed to reset Dev user' });
+    }
+});
+
 // Serve the main page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
