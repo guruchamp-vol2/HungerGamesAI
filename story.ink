@@ -206,12 +206,16 @@ Your training score is: {training_score}
 
 {training_score >= 80:
     The crowd erupts in applause! You've earned an exceptional score that will surely attract wealthy sponsors.
-- else if training_score >= 60:
-    The audience murmurs appreciatively. A solid score that should draw some sponsor interest.
-- else if training_score >= 40:
-    The reaction is mixed. Your score is adequate, but you'll need to work harder to impress sponsors.
 - else:
-    The silence is deafening. Your low score will make it difficult to attract sponsors.
+    {training_score >= 60:
+        The audience murmurs appreciatively. A solid score that should draw some sponsor interest.
+    - else:
+        {training_score >= 40:
+            The reaction is mixed. Your score is adequate, but you'll need to work harder to impress sponsors.
+        - else:
+            The silence is deafening. Your low score will make it difficult to attract sponsors.
+        }
+    }
 }
 
 * Continue to the platform
@@ -269,12 +273,14 @@ You are in the arena. What do you want to do?
         A silver parachute drifts down from the sky! Inside you find medicine and food.
         ~ health = health + 15
         ~ sponsor_points = sponsor_points - 20
-    - sponsor_points >= 30:
-        A small package lands nearby. It contains a bandage and some bread.
-        ~ health = health + 5
-        ~ sponsor_points = sponsor_points - 10
     - else:
-        You call out to the sponsors, but no response comes. You need to earn more favor first.
+        {sponsor_points >= 30:
+            A small package lands nearby. It contains a bandage and some bread.
+            ~ health = health + 5
+            ~ sponsor_points = sponsor_points - 10
+        - else:
+            You call out to the sponsors, but no response comes. You need to earn more favor first.
+        }
     }
     -> free_roam
 * Build a shelter
