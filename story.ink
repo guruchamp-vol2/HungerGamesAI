@@ -243,32 +243,29 @@ You are now inside the arena. The Games have begun.
 -> free_roam
 
 === free_roam ===
-~ temp cmd = bridge_prompt()
-~ action = cmd
--> process_action
+You are in the arena. What do you want to do?
 
-=== process_action ===
-- if (action == "search water")
+* Search for water
     You find a muddy stream. It's risky but drinkable.
     ~ sponsor_points += 5
     -> free_roam
-- else if (action == "hide")
+* Hide in the brush
     You crawl under thick brush, heart pounding.
     ~ sponsor_points += 3
     -> free_roam
-- else if (action == "attack")
+* Attack a nearby tribute
     You lunge at a nearby tribute. Blood splashes.
     ~ sponsor_points += 10
     -> free_roam
-- else if (action == "eat")
+* Eat your supplies
     You eat some of your supplies, regaining a bit of strength.
     ~ sponsor_points += 2
     -> free_roam
-- else if (action == "run to the woods")
+* Run to the woods
     You sprint deeper into the woods, putting distance between you and danger.
     ~ sponsor_points += 5
     -> free_roam
-- else if (action == "ask for sponsor gift")
+* Ask for sponsor gift
     - if (sponsor_points >= 50)
         A silver parachute drifts down from the sky! Inside you find medicine and food.
         ~ health += 15
@@ -280,182 +277,182 @@ You are now inside the arena. The Games have begun.
     - else
         You call out to the sponsors, but no response comes. You need to earn more favor first.
     -> free_roam
-- else if (action == "build shelter")
+* Build a shelter
     You construct a crude shelter from branches and leaves.
     ~ sponsor_points += 8
     -> free_roam
-- else if (action == "set trap")
+* Set a trap
     You carefully set up a snare trap.
     ~ sponsor_points += 12
     -> free_roam
-- else if (action == "hunt")
+* Hunt for food
     You track and catch a small animal.
     ~ sponsor_points += 15
     -> free_roam
-- else if (action == "climb tree")
+* Climb a tree
     You scale a tall tree for a better vantage point.
     ~ sponsor_points += 7
     -> free_roam
-- else if (action == "craft weapon")
+* Craft a weapon
     You fashion a crude weapon from available materials.
     ~ sponsor_points += 20
     -> free_roam
-- else if (action == "scout area")
+* Scout the area
     You carefully survey your surroundings for threats and resources.
     ~ sponsor_points += 8
     -> free_roam
-- else if (action == "rest")
+* Rest and recover
     You find a safe spot to rest and recover some energy.
     ~ health += 5
     ~ sponsor_points += 3
     -> free_roam
-- else if (action == "make fire")
+* Make a fire
     You build a small fire for warmth and cooking.
     ~ sponsor_points += 10
     -> free_roam
-- else if (action == "search supplies")
+* Search for supplies
     You scavenge the area for any useful items.
     ~ sponsor_points += 6
     -> free_roam
-- else if (action == "defend position")
+* Defend your position
     You fortify your current location against potential threats.
     ~ sponsor_points += 15
     -> free_roam
-- else if (action == "negotiate")
+* Try to negotiate
     You attempt to form an alliance with another tribute.
     ~ sponsor_points += 25
     -> free_roam
-- else if (action == "sabotage")
+* Sabotage others
     You sabotage another tribute's supplies or shelter.
     ~ sponsor_points += 30
     -> free_roam
-- else if (action == "heal wounds")
+* Heal your wounds
     You tend to your injuries using your medical knowledge.
     ~ health += 10
     ~ sponsor_points += 5
     -> free_roam
-- else if (action == "create distraction")
+* Create a distraction
     You create a diversion to escape or gain advantage.
     ~ sponsor_points += 12
     -> free_roam
-- else if (action == "study terrain")
+* Study the terrain
     You analyze the landscape for strategic advantages.
     ~ sponsor_points += 7
     -> free_roam
-- else if (action == "signal allies")
+* Signal to allies
     You attempt to communicate with potential allies.
     ~ sponsor_points += 8
     -> free_roam
-- else if (action == "poison supplies")
+* Poison supplies
     You contaminate food or water sources to eliminate competition.
     ~ sponsor_points += 35
     -> free_roam
-- else if (action == "build weapon")
+* Build a better weapon
     You construct a more sophisticated weapon from materials.
     ~ sponsor_points += 25
     -> free_roam
-- else if (action == "establish base")
+* Establish a base
     You create a permanent base of operations.
     ~ sponsor_points += 20
     -> free_roam
-- else if (action == "gather intelligence")
+* Gather intelligence
     You spy on other tributes to learn their plans.
     ~ sponsor_points += 18
     -> free_roam
-- else if (action == "create map")
+* Create a map
     You map out the arena to plan your strategy.
     ~ sponsor_points += 10
     -> free_roam
-- else if (action == "train skills")
+* Train your skills
     You practice your combat or survival skills.
     ~ sponsor_points += 8
     -> free_roam
-- else if (action == "barter")
+* Try to barter
     You trade with other tributes for needed supplies.
     ~ sponsor_points += 15
     -> free_roam
-- else if (action == "create armor")
+* Create armor
     You fashion protective gear from available materials.
     ~ sponsor_points += 22
     -> free_roam
-- else if (action == "establish perimeter")
+* Establish a perimeter
     You set up defensive boundaries around your area.
     ~ sponsor_points += 16
     -> free_roam
-- else if (action == "analyze weather")
+* Analyze the weather
     You study weather patterns to predict changes.
     ~ sponsor_points += 6
     -> free_roam
-- else if (action == "create medicine")
+* Create medicine
     You brew healing potions from natural ingredients.
     ~ health += 8
     ~ sponsor_points += 12
     -> free_roam
-- else if (action == "build bridge")
+* Build a bridge
     You construct a bridge to cross difficult terrain.
     ~ sponsor_points += 14
     -> free_roam
-- else if (action == "create camouflage")
+* Create camouflage
     You develop natural camouflage to hide better.
     ~ sponsor_points += 9
     -> free_roam
-- else if (action == "establish lookout")
+* Establish a lookout
     You set up observation posts to monitor activity.
     ~ sponsor_points += 11
     -> free_roam
-- else if (action == "create decoy")
+* Create a decoy
     You build decoys to mislead other tributes.
     ~ sponsor_points += 13
     -> free_roam
-- else if (action == "study wildlife")
+* Study wildlife
     You learn about local animals for hunting or avoidance.
     ~ sponsor_points += 7
     -> free_roam
-- else if (action == "create alarm")
+* Create an alarm
     You set up warning systems for approaching threats.
     ~ sponsor_points += 10
     -> free_roam
-- else if (action == "build raft")
+* Build a raft
     You construct a raft to cross water obstacles.
     ~ sponsor_points += 15
     -> free_roam
-- else if (action == "create signal")
+* Create a signal
     You develop communication signals with allies.
     ~ sponsor_points += 8
     -> free_roam
-- else if (action == "establish cache")
+* Establish a cache
     You create hidden supply caches for later use.
     ~ sponsor_points += 12
     -> free_roam
-- else if (action == "create diversion")
+* Create a diversion
     You orchestrate a complex diversion to achieve objectives.
     ~ sponsor_points += 20
     -> free_roam
-- else if (action == "build catapult")
+* Build a catapult
     You construct siege weapons for long-range attacks.
     ~ sponsor_points += 30
     -> free_roam
-- else if (action == "create poison")
+* Create poison
     You develop deadly poisons for weapons or traps.
     ~ sponsor_points += 25
     -> free_roam
-- else if (action == "establish network")
+* Establish network
     You create a spy network among other tributes.
     ~ sponsor_points += 35
     -> free_roam
-- else if (action == "build fortress")
+* Build fortress
     You construct a heavily fortified base.
     ~ sponsor_points += 40
     -> free_roam
-- else if (action == "create army")
+* Create army
     You recruit and organize other tributes into a fighting force.
     ~ sponsor_points += 50
     -> free_roam
-- else if (action == "establish kingdom")
+* Establish kingdom
     You create a mini-empire within the arena.
     ~ sponsor_points += 60
     -> free_roam
-- else if (action == "create rebellion")
+* Create rebellion
     You lead a rebellion against the Capitol's control.
     ~ sponsor_points += 100
     -> free_roam
