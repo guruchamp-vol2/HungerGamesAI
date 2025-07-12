@@ -335,6 +335,12 @@ async function loadStory() {
         try {
             story = new inkjs.Story(storyContent);
             console.log('Ink story created successfully');
+            
+            // Bind the external function for getting the player's name
+            story.BindExternalFunction("get_name", function() {
+                return prompt("Please enter your name", "Unknown Player");
+            });
+            
         } catch (inkError) {
             console.error('InkJS error creating story:', inkError);
             

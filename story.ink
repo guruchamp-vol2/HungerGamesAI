@@ -1,3 +1,8 @@
+EXTERNAL get_name()
+
+=== function get_name ===
+~ return "Anonymous"
+
 -> intro
 
 === intro ===
@@ -5,10 +10,9 @@ Welcome to Panem. The Capitol watches. The Districts remember.
 
 Before we begin, let's get to know you.
 
-What is your name?
+Hello {get_name()}!
 
-* [Enter your name]
-    -> ask_age
+-> ask_age
 
 === ask_age ===
 How old are you?
