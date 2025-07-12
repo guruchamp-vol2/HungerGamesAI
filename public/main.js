@@ -306,7 +306,7 @@ async function loadStory() {
         const inkjsLoaded = await waitForInkjs();
         
         if (!inkjsLoaded) {
-            // Create fallback story immediately
+            console.log('InkJS not loaded, creating fallback story...');
             createFallbackStory();
             return;
         }
@@ -323,12 +323,31 @@ async function loadStory() {
         console.log('Story content loaded successfully:', storyContent);
         
         // Validate story structure
-        if (!storyContent.inkVersion || !storyContent.root || !storyContent.knots) {
+        if (!storyContent.inkVersion || !storyContent.root) {
             throw new Error('Invalid story format: missing required fields');
         }
         
-  story = new inkjs.Story(storyContent);
-        console.log('Ink story created successfully');
+        // Check if this is a newer Ink version that might cause compatibility issues
+        if (storyContent.inkVersion >= 21) {
+            console.log('Detected Ink v21+ story, attempting to load with newer format...');
+        }
+        
+        try {
+            story = new inkjs.Story(storyContent);
+            console.log('Ink story created successfully');
+        } catch (inkError) {
+            console.error('InkJS error creating story:', inkError);
+            
+            // If it's the specific token conversion error, use fallback
+            if (inkError.message && inkError.message.includes('Failed to convert token to runtime object')) {
+                console.log('Detected Ink v21 compatibility issue, using fallback story...');
+                createFallbackStory();
+                return;
+            }
+            
+            // For other errors, re-throw
+            throw inkError;
+        }
         
         // Initialize story variables if they don't exist
         if (story.variablesState) {
