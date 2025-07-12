@@ -643,20 +643,8 @@ function displayChoices() {
                 if (story && story.variablesState) {
                     story.variablesState["name"] = name || "Tribute";
                 }
-                
-                const choiceIndex = currentChoices.indexOf(nameChoice);
-                console.log(`[Debug] Submitting name: '${name}'. Found choice at index: ${choiceIndex}`);
-                
-                if (choiceIndex === -1) {
-                    console.error("[Debug] CRITICAL: Could not find the 'Enter your name' choice in the current choices array. Halting.", currentChoices);
-                    return;
-                }
-
-                if (story) {
-                    story.ChooseChoiceIndex(choiceIndex);
-                }
-                
-                console.log("[Debug] Name submitted. Continuing story...");
+                // Always use index 0 for the name input choice
+                story.ChooseChoiceIndex(0);
                 continueStory();
             };
 
