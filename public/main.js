@@ -590,27 +590,26 @@ function setupEventListeners() {
 
 // Continue the story
 function continueStory() {
-    // Get the current story text
+    const storyContainer = document.getElementById('storyContainer');
     let storyText = '';
-    
-    if (story && story.canContinue) {
-        // Only continue once, not in a while loop
-        storyText = story.Continue();
+
+    // Continue until choices are available or story ends
+    while (story && story.canContinue && (!story.currentChoices || story.currentChoices.length === 0)) {
+        storyText += story.Continue();
     }
-    
-    // Display the story text with fade-in animation
+
+    // Display the story text
     if (storyText && storyText.trim()) {
-        const storyContainer = document.getElementById('storyContainer');
         const newText = document.createElement('p');
         newText.className = 'fade-in';
-        newText.textContent = storyText;
+        newText.textContent = storyText.trim();
         storyContainer.appendChild(newText);
         storyContainer.scrollTop = storyContainer.scrollHeight;
     }
-    
+
     // Display choices if available
     displayChoices();
-    
+
     // Update character stats
     updateCharacterStats();
 }
