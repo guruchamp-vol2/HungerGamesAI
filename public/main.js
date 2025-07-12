@@ -594,13 +594,12 @@ function continueStory() {
     let storyText = '';
     
     if (story && story.canContinue) {
-  while (story.canContinue) {
-            storyText += story.Continue();
-        }
+        // Only continue once, not in a while loop
+        storyText = story.Continue();
     }
     
     // Display the story text with fade-in animation
-    if (storyText.trim()) {
+    if (storyText && storyText.trim()) {
         const storyContainer = document.getElementById('storyContainer');
         const newText = document.createElement('p');
         newText.className = 'fade-in';
@@ -642,7 +641,9 @@ function displayChoices() {
 
             const submitName = () => {
                 const name = nameInput.value.trim();
-                story.variablesState["name"] = name || "Tribute";
+                if (story && story.variablesState) {
+                    story.variablesState["name"] = name || "Tribute";
+                }
                 
                 const choiceIndex = currentChoices.indexOf(nameChoice);
                 console.log(`[Debug] Submitting name: '${name}'. Found choice at index: ${choiceIndex}`);
@@ -652,11 +653,13 @@ function displayChoices() {
                     return;
                 }
 
-                story.ChooseChoiceIndex(choiceIndex);
+                if (story) {
+                    story.ChooseChoiceIndex(choiceIndex);
+                }
                 
                 console.log("[Debug] Name submitted. Continuing story...");
-      continueStory();
-    };
+                continueStory();
+            };
 
             nameSubmitBtn.addEventListener('click', submitName);
             nameInput.addEventListener('keypress', (e) => {
@@ -677,7 +680,10 @@ function displayChoices() {
                     }, 150);
 
                     console.log(`[Debug] Choice clicked: '${choice.text}' at index: ${index}`);
-                    story.ChooseChoiceIndex(index);
+                    
+                    if (story) {
+                        story.ChooseChoiceIndex(index);
+                    }
 
                     console.log("[Debug] Choice selected. Continuing story...");
                     continueStory();
@@ -685,7 +691,8 @@ function displayChoices() {
                 choicesContainer.appendChild(choiceElement);
             });
         }
-    } else {
+    } else if (story && !story.canContinue) {
+        // Story is waiting for input or has ended
         showFreeRoamMode();
     }
 }
