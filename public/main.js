@@ -612,7 +612,12 @@ function continueStory() {
     }
 
     // Check if we're in free roam mode
+    console.log("[Debug] Checking free roam mode...");
+    console.log("[Debug] Current tags:", story?.currentTags);
+    console.log("[Debug] Current path:", story?.state?.currentPath?.toString());
+    
     if (story && story.currentTags && story.currentTags.includes('free_roam')) {
+        console.log("[Debug] Free roam detected via tags");
         // We're in free roam mode, show input and initialize arena
         showFreeRoamMode();
         if (enemies.length === 0) {
@@ -623,6 +628,7 @@ function continueStory() {
     
     // Alternative check for free roam mode by looking at current knot name
     if (story && story.state && story.state.currentPath && story.state.currentPath.toString().includes('free_roam')) {
+        console.log("[Debug] Free roam detected via path");
         // We're in free roam mode, show input and initialize arena
         showFreeRoamMode();
         if (enemies.length === 0) {
@@ -663,6 +669,17 @@ function displayChoices() {
                 }
 
                 console.log("[Debug] Choice selected. Continuing story...");
+                
+                // Special handling for "Continue your journey" choice
+                if (choice.text.includes("Continue your journey")) {
+                    console.log("[Debug] Continue your journey detected - forcing free roam mode");
+                    showFreeRoamMode();
+                    if (enemies.length === 0) {
+                        initializeArena();
+                    }
+                    return;
+                }
+                
                 continueStory();
             });
             choicesContainer.appendChild(choiceElement);
