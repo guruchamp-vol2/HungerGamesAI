@@ -13,7 +13,57 @@ VAR player_age = 0
 VAR player_district = ""
 VAR player_name = ""
 VAR gpt_response = ""
+VAR action_input = ""
 
+// Enemy and threat tracking
+VAR nearby_enemies = 0
+VAR enemy_distance = 100
+VAR enemy_weapon = ""
+VAR enemy_strength = 0
+VAR enemy_health = 100
+VAR enemy_aggressive = false
+VAR enemy_aware = false
+
+// Environmental conditions
+VAR weather = "clear"
+VAR time_of_day = "day"
+VAR terrain_type = "forest"
+VAR visibility = 100
+VAR noise_level = 0
+VAR food_available = 0
+VAR water_available = 0
+VAR shelter_quality = 0
+
+// Player state tracking
+VAR player_energy = 100
+VAR player_hunger = 0
+VAR player_thirst = 0
+VAR player_injuries = 0
+VAR player_equipment_condition = 100
+VAR player_morale = 100
+
+// Combat and survival stats
+VAR combat_advantage = 0
+VAR escape_chance = 100
+VAR detection_risk = 0
+VAR resource_abundance = 0
+
+VAR movement_type = ""
+VAR action_result = ""
+
+VAR water_risk = 0
+VAR movement_risk = 0
+VAR rest_risk = 0
+VAR build_risk = 0
+VAR search_risk = 0
+VAR stealth_risk = 0
+VAR combat_risk = 0
+VAR food_risk = 0
+VAR generic_risk = 0
+VAR risk_factor = 0
+VAR success_chance = 0
+VAR outcome_quality = 0
+VAR action_lower = ""
 
 
 === intro ===
@@ -222,10 +272,34 @@ You are now inside the arena. The Games have begun.
 
 You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes remain.
 
-The arena stretches before you. You can do anything you want to survive. Type your actions in the input box below.
-
-* [Continue your journey]
-    -> free_roam
+{action_input != "":
+    - "water" or "river" or "stream" or "lake":
+        -> calculate_water_outcome
+    - "run" or "sprint" or "dash":
+        ~ movement_type = "run"
+        -> calculate_movement_outcome
+    - "jump" or "leap" or "climb":
+        ~ movement_type = "jump"
+        -> calculate_movement_outcome
+    - "walk" or "move" or "go":
+        ~ movement_type = "walk"
+        -> calculate_movement_outcome
+    - "rest" or "sleep" or "sit":
+        -> calculate_rest_outcome
+    - "build" or "make" or "create":
+        -> calculate_build_outcome
+    - "search" or "look" or "explore":
+        -> calculate_search_outcome
+    - "hide" or "sneak" or "stealth":
+        -> calculate_stealth_outcome
+    - "attack" or "fight" or "kill":
+        -> calculate_combat_outcome
+    - "eat" or "food" or "drink":
+        -> calculate_food_outcome
+    - else:
+        -> calculate_generic_outcome
+}
+-> END
 
 === function check_death ===
 {player_dead:
@@ -238,3 +312,437 @@ The arena stretches before you. You can do anything you want to survive. Type yo
     ~ return "Congratulations! You are the last tribute standing! You have won the Hunger Games! The Capitol erupts in celebration as you are crowned the victor. You have survived " + days_survived + " days in the arena and emerged as the champion."
 }
 ~ return ""
+
+=== process_action ===
+~ risk_factor = (nearby_enemies * 20) + (detection_risk * 10) + (player_injuries * 5) + (noise_level * 3)
+~ success_chance = 100 - risk_factor
+{success_chance < 0: success_chance = 0}
+
+{nearby_enemies > 0:
+    ~ combat_advantage = (player_strength * 2) + (player_stealth * 3) - (enemy_strength * 2) - (enemy_distance / 10)
+    {combat_advantage < 0:
+        ~ combat_advantage = 0
+    }
+}
+
+{action_input != "":
+    - "water" or "river" or "stream" or "lake":
+        -> calculate_water_outcome
+    - "run" or "sprint" or "dash":
+        ~ movement_type = "run"
+        -> calculate_movement_outcome
+    - "jump" or "leap" or "climb":
+        ~ movement_type = "jump"
+        -> calculate_movement_outcome
+    - "walk" or "move" or "go":
+        ~ movement_type = "walk"
+        -> calculate_movement_outcome
+    - "rest" or "sleep" or "sit":
+        -> calculate_rest_outcome
+    - "build" or "make" or "create":
+        -> calculate_build_outcome
+    - "search" or "look" or "explore":
+        -> calculate_search_outcome
+    - "hide" or "sneak" or "stealth":
+        -> calculate_stealth_outcome
+    - "attack" or "fight" or "kill":
+        -> calculate_combat_outcome
+    - "eat" or "food" or "drink":
+        -> calculate_food_outcome
+    - else:
+        -> calculate_generic_outcome
+}
+-> END
+
+=== calculate_water_outcome ===
+~ water_risk = 0
+{weather == "stormy":
+    ~ water_risk += 20
+}
+{terrain_type == "swamp":
+    ~ water_risk += 30
+}
+{nearby_enemies > 0:
+    ~ water_risk += 25
+}
+{player_knowledge < 3:
+    ~ water_risk += 15
+}
+
+{
+- RANDOM(1,100) <= water_risk:
+    ~ action_result = "You " + action_input + " and find water, but it's contaminated. You drink anyway and immediately feel sick. Your health plummets as your body fights the infection."
+    ~ player_health -= RANDOM(15,25)
+    ~ player_injuries += 1
+    ~ player_morale -= 10
+- RANDOM(1,100) <= 30:
+    ~ action_result = "You " + action_input + " and discover a clear, fresh water source. You drink deeply and feel completely refreshed. Your thirst is quenched and your energy restored."
+    ~ player_thirst = 0
+    ~ player_energy += 20
+    ~ player_health += 5
+    ~ player_morale += 5
+- RANDOM(1,100) <= 50:
+    ~ action_result = "You " + action_input + " and find a small stream. The water looks safe enough, and you drink what you need. You feel better, though still somewhat thirsty."
+    ~ player_thirst -= 20
+    ~ player_energy += 10
+- else:
+    ~ action_result = "You " + action_input + " and locate a muddy puddle. The water is barely drinkable, but it's better than nothing. You take small sips, trying to avoid getting sick."
+    ~ player_thirst -= 10
+    ~ player_energy += 5
+}
+-> END
+
+=== calculate_movement_outcome ===
+~ movement_risk = 0
+{action_input != "":
+    - "run" or "sprint" or "dash":
+        ~ movement_type = "run"
+    - "jump" or "leap" or "climb":
+        ~ movement_type = "jump"
+    - "walk" or "move" or "go":
+        ~ movement_type = "walk"
+}
+
+{player_injuries > 2:
+    ~ movement_risk += 30
+}
+{player_energy < 30:
+    ~ movement_risk += 20
+}
+{terrain_type == "mountain":
+    ~ movement_risk += 15
+}
+{weather == "stormy":
+    ~ movement_risk += 25
+}
+{visibility < 50:
+    ~ movement_risk += 20
+}
+{nearby_enemies > 0:
+    ~ movement_risk += 35
+}
+{movement_type == "run":
+    ~ movement_risk += 15
+}
+{movement_type == "jump":
+    ~ movement_risk += 25
+}
+
+{
+- RANDOM(1,100) <= movement_risk and movement_type == "run":
+    ~ action_result = "You " + action_input + " and immediately regret it. Your injured leg gives out, and you crash into the ground. The impact is brutal, and you hear something crack. You're in serious pain."
+    ~ player_health -= RANDOM(20,35)
+    ~ player_injuries += 2
+    ~ player_energy -= 15
+    ~ player_morale -= 15
+- RANDOM(1,100) <= movement_risk and movement_type == "jump":
+    ~ action_result = "You " + action_input + " and misjudge the distance completely. You land hard on jagged rocks, cutting yourself badly. Blood seeps from multiple wounds."
+    ~ player_health -= RANDOM(25,40)
+    ~ player_injuries += 3
+    ~ player_energy -= 20
+    ~ player_morale -= 20
+- RANDOM(1,100) <= movement_risk:
+    ~ action_result = "You " + action_input + " and trip over an unseen obstacle. You fall hard, scraping your hands and knees. The pain is sharp and immediate."
+    ~ player_health -= RANDOM(10,20)
+    ~ player_injuries += 1
+    ~ player_energy -= 10
+    ~ player_morale -= 5
+- RANDOM(1,100) <= 40 and movement_type == "run":
+    ~ action_result = "You " + action_input + " with surprising speed and agility. Your training pays off as you cover ground quickly and efficiently. You feel energized by the movement."
+    ~ player_energy += 10
+    ~ player_morale += 5
+    ~ escape_chance += 20
+- RANDOM(1,100) <= 40 and movement_type == "jump":
+    ~ action_result = "You " + action_input + " with perfect form. Your leap is graceful and controlled, landing you exactly where you intended. The movement feels natural and powerful."
+    ~ player_energy += 5
+    ~ player_morale += 10
+    ~ player_stealth += 1
+- RANDOM(1,100) <= 40:
+    ~ action_result = "You " + action_input + " carefully and deliberately. Your movements are steady and controlled, conserving energy while making good progress."
+    ~ player_energy += 5
+    ~ player_morale += 3
+- else:
+    ~ action_result = "You " + action_input + " and make steady progress. The movement is uneventful but effective. You're making your way through the arena as planned."
+    ~ player_energy -= 2
+}
+-> END
+
+=== calculate_rest_outcome ===
+~ rest_risk = 0
+{nearby_enemies > 0:
+    ~ rest_risk += 40
+}
+{enemy_distance < 30:
+    ~ rest_risk += 30
+}
+{enemy_aware:
+    ~ rest_risk += 25
+}
+{player_stealth < 3:
+    ~ rest_risk += 15
+}
+{terrain_type == "desert":
+    ~ rest_risk += 10
+}
+
+{
+- RANDOM(1,100) <= rest_risk:
+    ~ action_result = "You " + action_input + " and immediately hear footsteps approaching. You scramble to your feet just as a tribute appears from the bushes. They're armed and look aggressive. You're in immediate danger!"
+    ~ nearby_enemies = 1
+    ~ enemy_distance = 5
+    ~ enemy_aggressive = true
+    ~ enemy_aware = true
+    ~ player_energy -= 10
+    ~ player_morale -= 20
+    ~ detection_risk += 30
+- RANDOM(1,100) <= 60:
+    ~ action_result = "You " + action_input + " in a well-hidden spot. The rest is peaceful and restorative. You feel your energy returning and your mind clearing. This was exactly what you needed."
+    ~ player_energy += 30
+    ~ player_health += 5
+    ~ player_morale += 15
+    ~ player_hunger -= 5
+    ~ player_thirst -= 5
+- else:
+    ~ action_result = "You " + action_input + " briefly, but you're too tense to relax properly. Every sound makes you jump. Still, you manage to recover some energy."
+    ~ player_energy += 15
+    ~ player_morale += 5
+}
+-> END
+
+=== calculate_build_outcome ===
+~ build_risk = 0
+{nearby_enemies > 0:
+    ~ build_risk += 35
+}
+{player_knowledge < 2:
+    ~ build_risk += 20
+}
+{player_energy < 30:
+    ~ build_risk += 15
+}
+{weather == "stormy":
+    ~ build_risk += 25
+}
+
+{
+- RANDOM(1,100) <= build_risk:
+    ~ action_result = "You " + action_input + " but your lack of experience shows. The structure collapses on you, causing injuries. You're lucky it wasn't worse."
+    ~ player_health -= RANDOM(15,25)
+    ~ player_injuries += 1
+    ~ player_energy -= 20
+    ~ player_morale -= 10
+- RANDOM(1,100) <= 50:
+    ~ action_result = "You " + action_input + " with skill and patience. The result is impressive - a sturdy shelter that provides excellent cover and protection. You feel proud of your work."
+    ~ shelter_quality += 20
+    ~ player_energy -= 10
+    ~ player_morale += 15
+    ~ detection_risk -= 10
+- else:
+    ~ action_result = "You " + action_input + " a basic structure. It's not perfect, but it provides some shelter and cover. It's better than nothing."
+    ~ shelter_quality += 10
+    ~ player_energy -= 5
+    ~ player_morale += 5
+}
+-> END
+
+=== calculate_search_outcome ===
+~ search_risk = 0
+{nearby_enemies > 0:
+    ~ search_risk += 30
+}
+{enemy_aware:
+    ~ search_risk += 25
+}
+{player_stealth < 2:
+    ~ search_risk += 15
+}
+{noise_level > 5:
+    ~ search_risk += 20
+}
+
+{
+- RANDOM(1,100) <= search_risk:
+    ~ action_result = "You " + action_input + " and immediately regret it. You've made too much noise, and you hear movement nearby. Someone is coming to investigate. You need to move quickly!"
+    ~ nearby_enemies = 1
+    ~ enemy_distance = 15
+    ~ enemy_aware = true
+    ~ detection_risk += 25
+    ~ player_energy -= 5
+    ~ player_morale -= 10
+- RANDOM(1,100) <= 40:
+    ~ action_result = "You " + action_input + " carefully and discover something valuable! You find a cache of supplies - food, water, and even some medical supplies. This is a major find!"
+    ~ food_available += 20
+    ~ water_available += 15
+    ~ player_morale += 20
+    ~ resource_abundance += 15
+- RANDOM(1,100) <= 70:
+    ~ action_result = "You " + action_input + " thoroughly and find some useful items. There's a bit of food and some materials you can use. Not a huge find, but helpful."
+    ~ food_available += 5
+    ~ water_available += 5
+    ~ player_morale += 5
+    ~ resource_abundance += 5
+- else:
+    ~ action_result = "You " + action_input + " but find nothing of value. The area has been picked clean by other tributes. You've wasted time and energy."
+    ~ player_energy -= 5
+    ~ player_morale -= 5
+}
+-> END
+
+=== calculate_stealth_outcome ===
+~ stealth_risk = 0
+{player_stealth < 2:
+    ~ stealth_risk += 30
+}
+{player_injuries > 1:
+    ~ stealth_risk += 20
+}
+{terrain_type == "desert":
+    ~ stealth_risk += 25
+}
+{weather == "stormy":
+    ~ stealth_risk += 15
+}
+{nearby_enemies > 0:
+    ~ stealth_risk += 40
+}
+
+{
+- RANDOM(1,100) <= stealth_risk:
+    ~ action_result = "You " + action_input + " but you're not very good at it. You make too much noise and attract attention. You hear someone approaching - you've been spotted!"
+    ~ nearby_enemies = 1
+    ~ enemy_distance = 10
+    ~ enemy_aware = true
+    ~ detection_risk += 40
+    ~ player_energy -= 10
+    ~ player_morale -= 15
+- RANDOM(1,100) <= 60:
+    ~ action_result = "You " + action_input + " with expert precision. Your movements are silent and calculated. You manage to observe other tributes without being detected. Your stealth training is paying off."
+    ~ player_stealth += 1
+    ~ player_energy -= 5
+    ~ player_morale += 10
+    ~ detection_risk -= 20
+    ~ escape_chance += 15
+- else:
+    ~ action_result = "You " + action_input + " as best you can. You're not completely silent, but you manage to avoid detection. The movement is slow but effective."
+    ~ player_energy -= 3
+    ~ player_morale += 3
+    ~ detection_risk -= 5
+}
+-> END
+
+=== calculate_combat_outcome ===
+~ combat_risk = 0
+{nearby_enemies == 0:
+    ~ combat_risk = 100
+}
+{player_strength < 3:
+    ~ combat_risk += 30
+}
+{player_health < 50:
+    ~ combat_risk += 25
+}
+{enemy_strength > player_strength:
+    ~ combat_risk += 40
+}
+{enemy_distance > 20:
+    ~ combat_risk += 50
+}
+
+{
+- RANDOM(1,100) <= combat_risk and nearby_enemies == 0:
+    ~ action_result = "You " + action_input + " but there's no one to fight. You practice your combat stance and feel more confident with your weapon. At least you're prepared for when danger comes."
+    ~ player_strength += 1
+    ~ player_energy -= 5
+    ~ player_morale += 5
+- RANDOM(1,100) <= combat_risk:
+    ~ action_result = "You " + action_input + " and immediately realize you've made a terrible mistake. The enemy is stronger than you expected, and you're quickly overwhelmed. The fight is brutal and one-sided."
+    ~ player_health -= RANDOM(30,50)
+    ~ player_injuries += 3
+    ~ player_energy -= 25
+    ~ player_morale -= 30
+    ~ enemy_health -= RANDOM(5,15)
+- RANDOM(1,100) <= 40:
+    ~ action_result = "You " + action_input + " with skill and determination. The combat is intense, but you hold your own. You manage to drive off your opponent and escape with your life."
+    ~ player_health -= RANDOM(10,20)
+    ~ player_energy -= 15
+    ~ player_morale += 10
+    ~ player_strength += 1
+    ~ nearby_enemies = 0
+    ~ enemy_distance = 100
+- else:
+    ~ action_result = "You " + action_input + " but the enemy is too strong. You're forced to retreat, taking damage in the process. You need to find a better strategy."
+    ~ player_health -= RANDOM(15,25)
+    ~ player_energy -= 10
+    ~ player_morale -= 10
+    ~ escape_chance -= 10
+}
+-> END
+
+=== calculate_food_outcome ===
+~ food_risk = 0
+{player_knowledge < 2:
+    ~ food_risk += 30
+}
+{food_available < 5:
+    ~ food_risk += 20
+}
+{terrain_type == "desert":
+    ~ food_risk += 25
+}
+{weather == "stormy":
+    ~ food_risk += 15
+}
+
+{
+- RANDOM(1,100) <= food_risk:
+    ~ action_result = "You " + action_input + " something that looks edible, but it's actually poisonous. Within minutes, you're violently ill. Your body fights the poison, but you're severely weakened."
+    ~ player_health -= RANDOM(25,40)
+    ~ player_injuries += 2
+    ~ player_energy -= 20
+    ~ player_morale -= 20
+    ~ player_hunger += 10
+- RANDOM(1,100) <= 50:
+    ~ action_result = "You " + action_input + " and find a feast! There's plenty of safe, nutritious food. You eat your fill and feel completely satisfied. Your energy and morale are restored."
+    ~ player_hunger = 0
+    ~ player_energy += 25
+    ~ player_health += 10
+    ~ player_morale += 15
+    ~ food_available -= 10
+- else:
+    ~ action_result = "You " + action_input + " what little food you can find. It's not much, but it takes the edge off your hunger. You feel slightly better."
+    ~ player_hunger -= 15
+    ~ player_energy += 10
+    ~ player_morale += 5
+    ~ food_available -= 5
+}
+-> END
+
+=== calculate_generic_outcome ===
+~ generic_risk = 0
+{nearby_enemies > 0:
+    ~ generic_risk += 25
+}
+{player_energy < 20:
+    ~ generic_risk += 15
+}
+{player_health < 30:
+    ~ generic_risk += 20
+}
+
+{
+- RANDOM(1,100) <= generic_risk:
+    ~ action_result = "You " + action_input + " but your weakened state makes it difficult. You struggle with the action and end up hurting yourself. This is getting harder."
+    ~ player_health -= RANDOM(5,15)
+    ~ player_energy -= 10
+    ~ player_morale -= 10
+- RANDOM(1,100) <= 60:
+    ~ action_result = "You " + action_input + " successfully. The action feels natural and you accomplish what you set out to do. You're getting better at surviving in this arena."
+    ~ player_energy -= 3
+    ~ player_morale += 5
+    ~ player_strength += 1
+- else:
+    ~ action_result = "You " + action_input + " and manage to complete the action, though it takes more effort than expected. You're making progress, slowly but surely."
+    ~ player_energy -= 5
+    ~ player_morale += 2
+}
+-> END

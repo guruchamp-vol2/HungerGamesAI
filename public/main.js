@@ -801,85 +801,31 @@ async function handleFreeRoamAction(action) {
             return;
         }
         
-        // Update character data from story variables
-        charData.name = story.variablesState["player_name"] || story.variablesState["name"] || "";
-        charData.district = story.variablesState["player_district"] || story.variablesState["district"] || "";
-        charData.age = story.variablesState["player_age"] || story.variablesState["age"] || 0;
-        charData.health = story.variablesState["player_health"] || story.variablesState["health"] || 100;
-        charData.weapon = story.variablesState["player_weapon"] || story.variablesState["weapon"] || "";
-        charData.inventory = story.variablesState["player_inventory"] || story.variablesState["inventory"] || "";
-        charData.trainingScore = story.variablesState["training_score"] || 0;
-        charData.sponsorPoints = story.variablesState["sponsor_points"] || 0;
-
-        const storyContext = "You are in the Hunger Games arena. The Games have begun and you must survive. Other tributes are hunting you, and you need to find food, water, and shelter while avoiding danger.";
-
-        // Send action to server for GPT processing
-        console.log('[Debug] Sending action to server:', action);
-        console.log('[Debug] Player stats:', charData);
-        console.log('[Debug] Request body:', JSON.stringify({
-            action: action,
-            playerStats: charData,
-            storyContext: storyContext
-        }));
+        // Process action through Ink story
+        console.log('[Debug] Processing action through Ink story:', action);
         
-        const response = await fetch('/api/free-roam', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: action,
-                playerStats: charData,
-                storyContext: storyContext
-            })
-        });
+        // Set the action input in the story
+        story.variablesState["action_input"] = action;
         
-        console.log('[Debug] Server response status:', response.status);
-        console.log('[Debug] Server response headers:', response.headers);
-
-        if (response.ok) {
-            const data = await response.json();
-            console.log('[Debug] Server response data:', data);
-            
-            // Display the AI response
-            const aiResponseText = document.createElement('p');
-            aiResponseText.className = 'fade-in';
-            aiResponseText.style.color = '#e0e0e0';
-            aiResponseText.style.lineHeight = '1.6';
-            aiResponseText.textContent = data.response;
-            storyContainer.appendChild(aiResponseText);
-            
-            // Set the GPT response in the story
-            story.variablesState["gpt_response"] = data.response;
-            
-            // Update character stats after action
-            updateCharacterStats();
-            
-        } else {
-            console.log('[Debug] Response not OK, trying to parse error...');
-            let errorData;
-            try {
-                errorData = await response.json();
-                console.log('[Debug] Error data parsed:', errorData);
-            } catch (parseError) {
-                console.log('[Debug] Could not parse error response as JSON');
-                errorData = { error: 'Unknown server error' };
-            }
-            
-            console.error('Server error:', errorData);
-            
-            // Display error response if available
-            if (errorData.response) {
-                const errorResponseText = document.createElement('p');
-                errorResponseText.className = 'fade-in';
-                errorResponseText.style.color = '#e0e0e0';
-                errorResponseText.style.lineHeight = '1.6';
-                errorResponseText.textContent = errorData.response;
-                storyContainer.appendChild(errorResponseText);
-            } else {
-                throw new Error(`Server error: ${errorData.error || 'Unknown error'}`);
-            }
+        // Continue the story to process the action
+        story.Continue();
+        
+        // Get the current text (which should include the action result)
+        const currentText = story.currentText;
+        console.log('[Debug] Story response:', currentText);
+        
+        // Display the story response
+        if (currentText && currentText.trim()) {
+            const storyResponseText = document.createElement('p');
+            storyResponseText.className = 'fade-in';
+            storyResponseText.style.color = '#e0e0e0';
+            storyResponseText.style.lineHeight = '1.6';
+            storyResponseText.textContent = currentText;
+            storyContainer.appendChild(storyResponseText);
         }
+        
+        // Update character stats after action
+        updateCharacterStats();
         
     } catch (error) {
         console.error('Error processing action:', error);
