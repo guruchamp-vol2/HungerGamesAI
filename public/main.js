@@ -592,24 +592,37 @@ function setupEventListeners() {
 // Continue the story
 function continueStory() {
     const storyContainer = document.getElementById('storyContainer');
-    let storyText = '';
 
     // Continue until choices are available or story ends
     while (story && story.canContinue && (!story.currentChoices || story.currentChoices.length === 0)) {
-        storyText += story.Continue();
-    }
-
-    // Display the story text
-    if (storyText && storyText.trim()) {
-        const newText = document.createElement('p');
-        newText.className = 'fade-in';
-        newText.textContent = storyText.trim();
-        storyContainer.appendChild(newText);
-        storyContainer.scrollTop = storyContainer.scrollHeight;
+        const storyText = story.Continue();
+        
+        // Display each piece of story text as a separate paragraph
+        if (storyText && storyText.trim()) {
+            const newText = document.createElement('p');
+            newText.className = 'fade-in';
+            newText.textContent = storyText.trim();
+            storyContainer.appendChild(newText);
+            
+            // Smooth scroll to the new text
+            setTimeout(() => {
+                storyContainer.scrollTop = storyContainer.scrollHeight;
+            }, 50);
+        }
     }
 
     // Check if we're in free roam mode
     if (story && story.currentTags && story.currentTags.includes('free_roam')) {
+        // We're in free roam mode, show input and initialize arena
+        showFreeRoamMode();
+        if (enemies.length === 0) {
+            initializeArena();
+        }
+        return; // Don't display choices in free roam mode
+    }
+    
+    // Alternative check for free roam mode by looking at current knot name
+    if (story && story.state && story.state.currentPath && story.state.currentPath.toString().includes('free_roam')) {
         // We're in free roam mode, show input and initialize arena
         showFreeRoamMode();
         if (enemies.length === 0) {
@@ -654,7 +667,9 @@ function displayChoices() {
             });
             choicesContainer.appendChild(choiceElement);
         });
-    } else if (story && !story.canContinue && !story.currentTags?.includes('free_roam')) {
+    } else if (story && !story.canContinue && 
+               !story.currentTags?.includes('free_roam') && 
+               !(story.state && story.state.currentPath && story.state.currentPath.toString().includes('free_roam'))) {
         // Story is waiting for input or has ended (but not in free roam mode)
         showFreeRoamMode();
     }
