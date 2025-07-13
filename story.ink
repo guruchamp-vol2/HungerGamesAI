@@ -223,7 +223,8 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
 
 The arena stretches before you. You can do anything you want to survive. Type your actions in the input box below.
 
--> DONE
+* [Continue your journey]
+    -> free_roam
 
 === function check_death ===
 {player_dead:

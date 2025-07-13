@@ -608,18 +608,21 @@ function continueStory() {
         storyContainer.scrollTop = storyContainer.scrollHeight;
     }
 
+    // Check if we're in free roam mode
+    if (story && story.currentTags && story.currentTags.includes('free_roam')) {
+        // We're in free roam mode, show input and initialize arena
+        showFreeRoamMode();
+        if (enemies.length === 0) {
+            initializeArena();
+        }
+        return; // Don't display choices in free roam mode
+    }
+
     // Display choices if available
     displayChoices();
 
     // Update character stats
     updateCharacterStats();
-    
-    // Initialize arena if we're in free roam mode
-    if (story && story.currentTags && story.currentTags.includes('free_roam')) {
-        if (enemies.length === 0) {
-            initializeArena();
-        }
-    }
 }
 
 // Display choices
@@ -651,8 +654,8 @@ function displayChoices() {
             });
             choicesContainer.appendChild(choiceElement);
         });
-    } else if (story && !story.canContinue) {
-        // Story is waiting for input or has ended
+    } else if (story && !story.canContinue && !story.currentTags?.includes('free_roam')) {
+        // Story is waiting for input or has ended (but not in free roam mode)
         showFreeRoamMode();
     }
 }
