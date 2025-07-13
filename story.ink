@@ -307,10 +307,48 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
         -> calculate_generic_outcome
 }
 
-What would you like to do?
+The arena stretches before you. You can move freely and take actions to survive.
+
+* Enter free roam mode
+    -> free_roam_loop
+
+=== free_roam_loop ===
+# free_roam
+{check_death()}
+{check_win()}
+
+{action_input != "":
+    - "water" or "river" or "stream" or "lake":
+        -> calculate_water_outcome
+    - "run" or "sprint" or "dash":
+        ~ movement_type = "run"
+        -> calculate_movement_outcome
+    - "jump" or "leap" or "climb":
+        ~ movement_type = "jump"
+        -> calculate_movement_outcome
+    - "walk" or "move" or "go":
+        ~ movement_type = "walk"
+        -> calculate_movement_outcome
+    - "rest" or "sleep" or "sit":
+        -> calculate_rest_outcome
+    - "build" or "make" or "create":
+        -> calculate_build_outcome
+    - "search" or "look" or "explore":
+        -> calculate_search_outcome
+    - "hide" or "sneak" or "stealth":
+        -> calculate_stealth_outcome
+    - "attack" or "fight" or "kill":
+        -> calculate_combat_outcome
+    - "eat" or "food" or "drink":
+        -> calculate_food_outcome
+    - else:
+        -> calculate_generic_outcome
+}
+
+You are in free roam mode. Type your actions in the input box below.
 
 * Continue your journey
-    -> free_roam
+    -> free_roam_loop
 
 === function check_death ===
 {player_dead:
@@ -363,7 +401,7 @@ What would you like to do?
     - else:
         -> calculate_generic_outcome
 }
--> free_roam
+-> free_roam_loop
 
 === calculate_water_outcome ===
 ~ water_risk = 0
@@ -401,7 +439,7 @@ What would you like to do?
     ~ player_thirst -= 10
     ~ player_energy += 5
 }
--> free_roam
+-> free_roam_loop
 
 === calculate_movement_outcome ===
 ~ movement_risk = 0
@@ -476,7 +514,7 @@ What would you like to do?
     ~ action_result = "You " + action_input + " and make steady progress. The movement is uneventful but effective. You're making your way through the arena as planned."
     ~ player_energy -= 2
 }
--> free_roam
+-> free_roam_loop
 
 === calculate_rest_outcome ===
 ~ rest_risk = 0
@@ -518,7 +556,7 @@ What would you like to do?
     ~ player_energy += 15
     ~ player_morale += 5
 }
--> free_roam
+-> free_roam_loop
 
 === calculate_build_outcome ===
 ~ build_risk = 0
@@ -554,7 +592,7 @@ What would you like to do?
     ~ player_energy -= 5
     ~ player_morale += 5
 }
--> free_roam
+-> free_roam_loop
 
 === calculate_search_outcome ===
 ~ search_risk = 0
@@ -597,7 +635,7 @@ What would you like to do?
     ~ player_energy -= 5
     ~ player_morale -= 5
 }
--> free_roam
+-> free_roam_loop
 
 === calculate_stealth_outcome ===
 ~ stealth_risk = 0
@@ -639,7 +677,7 @@ What would you like to do?
     ~ player_morale += 3
     ~ detection_risk -= 5
 }
--> free_roam
+-> free_roam_loop
 
 === calculate_combat_outcome ===
 ~ combat_risk = 0
@@ -687,7 +725,7 @@ What would you like to do?
     ~ player_morale -= 10
     ~ escape_chance -= 10
 }
--> free_roam
+-> free_roam_loop
 
 === calculate_food_outcome ===
 ~ food_risk = 0
@@ -726,7 +764,7 @@ What would you like to do?
     ~ player_morale += 5
     ~ food_available -= 5
 }
--> free_roam
+-> free_roam_loop
 
 === calculate_generic_outcome ===
 ~ generic_risk = 0
@@ -756,4 +794,4 @@ What would you like to do?
     ~ player_energy -= 5
     ~ player_morale += 2
 }
--> free_roam
+-> free_roam_loop
