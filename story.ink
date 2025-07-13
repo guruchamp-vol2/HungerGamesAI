@@ -9,11 +9,11 @@ VAR player_stealth = 0
 VAR player_knowledge = 0
 VAR player_weapon = ""
 VAR player_inventory = ""
+VAR player_age = 0
+VAR player_district = ""
 
 === function get_name ===
 ~ return "Anonymous"
-
--> intro
 
 === intro ===
 Welcome to Panem. The Capitol watches. The Districts remember.
@@ -219,75 +219,18 @@ You are now inside the arena. The Games have begun.
 
 You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes remain.
 
-What do you want to do?
+The arena stretches before you. You can do anything you want to survive. Type your actions in the input box below.
 
-* Search for water
-    You find a muddy stream. It's risky but drinkable.
-    ~ player_health = min(player_health + 10, 100)
-    ~ days_survived += 1
-    ~ tributes_remaining = max(tributes_remaining - 2, 1)
-    -> free_roam
-* Hide in the brush
-    You crawl under thick brush, heart pounding.
-    ~ player_stealth += 1
-    ~ days_survived += 1
-    ~ tributes_remaining = max(tributes_remaining - 1, 1)
-    -> free_roam
-* Attack a nearby tribute
-    You lunge at a nearby tribute. Blood splashes.
-    ~ player_strength += 1
-    ~ tributes_remaining = max(tributes_remaining - 1, 1)
-    -> free_roam
-* Eat your supplies
-    You eat some of your supplies, regaining a bit of strength.
-    ~ player_health = min(player_health + 15, 100)
-    ~ days_survived += 1
-    -> free_roam
-* Run to the woods
-    You sprint deeper into the woods, putting distance between you and danger.
-    ~ player_stealth += 1
-    ~ days_survived += 1
-    -> free_roam
-* Ask for sponsor gift
-    A silver parachute drifts down from the sky! Inside you find medicine and food.
-    ~ player_health = min(player_health + 20, 100)
-    ~ player_inventory += ", Sponsor gift"
-    -> free_roam
-* Build a shelter
-    You construct a crude shelter from branches and leaves.
-    ~ player_stealth += 1
-    ~ days_survived += 1
-    -> free_roam
-* Set a trap
-    You carefully set up a snare trap.
-    ~ player_knowledge += 1
-    ~ tributes_remaining = max(tributes_remaining - 1, 1)
-    -> free_roam
-* Hunt for food
-    You track and catch a small animal.
-    ~ player_strength += 1
-    ~ player_health = min(player_health + 10, 100)
-    ~ days_survived += 1
-    -> free_roam
-* Climb a tree
-    You scale a tall tree for a better vantage point.
-    ~ player_stealth += 1
-    ~ days_survived += 1
-    -> free_roam
+-> DONE
 
 === function check_death ===
 {player_dead:
-    You are dead. The Games are over for you.
-    -> END
+    ~ return "You are dead. The Games are over for you."
 }
+~ return ""
 
 === function check_win ===
 {tributes_remaining <= 1:
-    Congratulations! You are the last tribute standing!
-    
-    You have won the Hunger Games!
-    
-    The Capitol erupts in celebration as you are crowned the victor. You have survived {days_survived} days in the arena and emerged as the champion.
-    
-    -> END
+    ~ return "Congratulations! You are the last tribute standing! You have won the Hunger Games! The Capitol erupts in celebration as you are crowned the victor. You have survived " + days_survived + " days in the arena and emerged as the champion."
 }
+~ return ""

@@ -727,6 +727,31 @@ async function handleFreeRoamAction(action) {
             return;
         }
         
+        // Handle predefined actions from the Ink story
+        const predefinedResult = handlePredefinedAction(action);
+        if (predefinedResult) {
+            // Move enemies after action
+            moveEnemies();
+            
+            // Check for encounters
+            const encounterResult = checkEncounters();
+            if (encounterResult) {
+                const encounterText = document.createElement('p');
+                encounterText.className = 'fade-in';
+                encounterText.style.color = '#e0e0e0';
+                encounterText.textContent = encounterResult;
+                storyContainer.appendChild(encounterText);
+            }
+            
+            // Update character stats
+            updateCharacterStats();
+            
+            // Hide typing indicator
+            typingIndicator.style.display = 'none';
+            storyContainer.scrollTop = storyContainer.scrollHeight;
+            return;
+        }
+        
         // Update character data from story variables
         charData.name = story.variablesState["player_name"] || story.variablesState["name"] || "";
         charData.district = story.variablesState["player_district"] || story.variablesState["district"] || "";
@@ -848,6 +873,118 @@ function handleMovement(action) {
     }
     
     return null; // Not a movement command
+}
+
+// Handle predefined actions from the Ink story
+function handlePredefinedAction(action) {
+    const actionLower = action.toLowerCase();
+    
+    // Climb a tree action
+    if (actionLower.includes('climb') && actionLower.includes('tree')) {
+        if (story && story.variablesState) {
+            // Update story variables to match the Ink story choice
+            story.variablesState["player_stealth"] = (story.variablesState["player_stealth"] || 0) + 1;
+            story.variablesState["days_survived"] = (story.variablesState["days_survived"] || 0) + 1;
+            
+            // Add sponsor points (as mentioned in README)
+            story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 7;
+        }
+        return "You scale a tall tree for a better vantage point. From your elevated position, you can see further across the arena and spot potential threats or resources.";
+    }
+    
+    // Search for water action
+    if (actionLower.includes('search') && actionLower.includes('water')) {
+        if (story && story.variablesState) {
+            story.variablesState["player_health"] = Math.min((story.variablesState["player_health"] || 100) + 10, 100);
+            story.variablesState["days_survived"] = (story.variablesState["days_survived"] || 0) + 1;
+            story.variablesState["tributes_remaining"] = Math.max((story.variablesState["tributes_remaining"] || 24) - 2, 1);
+            story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 5;
+        }
+        return "You find a muddy stream. It's risky but drinkable. You carefully filter the water through your clothing before drinking.";
+    }
+    
+    // Hide action
+    if (actionLower.includes('hide') || actionLower.includes('hide in brush')) {
+        if (story && story.variablesState) {
+            story.variablesState["player_stealth"] = (story.variablesState["player_stealth"] || 0) + 1;
+            story.variablesState["days_survived"] = (story.variablesState["days_survived"] || 0) + 1;
+            story.variablesState["tributes_remaining"] = Math.max((story.variablesState["tributes_remaining"] || 24) - 1, 1);
+            story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 3;
+        }
+        return "You crawl under thick brush, heart pounding. The dense foliage provides excellent cover from prying eyes.";
+    }
+    
+    // Attack action
+    if (actionLower.includes('attack') || actionLower.includes('attack nearby tribute')) {
+        if (story && story.variablesState) {
+            story.variablesState["player_strength"] = (story.variablesState["player_strength"] || 0) + 1;
+            story.variablesState["tributes_remaining"] = Math.max((story.variablesState["tributes_remaining"] || 24) - 1, 1);
+            story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 10;
+        }
+        return "You lunge at a nearby tribute. Blood splashes as you engage in a fierce battle for survival.";
+    }
+    
+    // Eat action
+    if (actionLower.includes('eat') || actionLower.includes('eat supplies')) {
+        if (story && story.variablesState) {
+            story.variablesState["player_health"] = Math.min((story.variablesState["player_health"] || 100) + 15, 100);
+            story.variablesState["days_survived"] = (story.variablesState["days_survived"] || 0) + 1;
+            story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 2;
+        }
+        return "You eat some of your supplies, regaining a bit of strength. The food helps restore your energy.";
+    }
+    
+    // Run to woods action
+    if (actionLower.includes('run') && actionLower.includes('woods')) {
+        if (story && story.variablesState) {
+            story.variablesState["player_stealth"] = (story.variablesState["player_stealth"] || 0) + 1;
+            story.variablesState["days_survived"] = (story.variablesState["days_survived"] || 0) + 1;
+            story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 5;
+        }
+        return "You sprint deeper into the woods, putting distance between you and danger. The trees provide cover as you disappear into the wilderness.";
+    }
+    
+    // Ask for sponsor gift action
+    if (actionLower.includes('ask') && actionLower.includes('sponsor') && actionLower.includes('gift')) {
+        if (story && story.variablesState) {
+            story.variablesState["player_health"] = Math.min((story.variablesState["player_health"] || 100) + 20, 100);
+            story.variablesState["player_inventory"] = (story.variablesState["player_inventory"] || "") + ", Sponsor gift";
+        }
+        return "A silver parachute drifts down from the sky! Inside you find medicine and food. The sponsors have noticed your efforts.";
+    }
+    
+    // Build shelter action
+    if (actionLower.includes('build') && actionLower.includes('shelter')) {
+        if (story && story.variablesState) {
+            story.variablesState["player_stealth"] = (story.variablesState["player_stealth"] || 0) + 1;
+            story.variablesState["days_survived"] = (story.variablesState["days_survived"] || 0) + 1;
+            story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 8;
+        }
+        return "You construct a crude shelter from branches and leaves. It's not much, but it provides some protection from the elements and prying eyes.";
+    }
+    
+    // Set trap action
+    if (actionLower.includes('set') && actionLower.includes('trap')) {
+        if (story && story.variablesState) {
+            story.variablesState["player_knowledge"] = (story.variablesState["player_knowledge"] || 0) + 1;
+            story.variablesState["tributes_remaining"] = Math.max((story.variablesState["tributes_remaining"] || 24) - 1, 1);
+            story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 12;
+        }
+        return "You carefully set up a snare trap. With any luck, it will catch food or eliminate a threat without direct confrontation.";
+    }
+    
+    // Hunt action
+    if (actionLower.includes('hunt') || actionLower.includes('hunt for food')) {
+        if (story && story.variablesState) {
+            story.variablesState["player_strength"] = (story.variablesState["player_strength"] || 0) + 1;
+            story.variablesState["player_health"] = Math.min((story.variablesState["player_health"] || 100) + 10, 100);
+            story.variablesState["days_survived"] = (story.variablesState["days_survived"] || 0) + 1;
+            story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 15;
+        }
+        return "You track and catch a small animal. The meat provides much-needed sustenance and energy.";
+    }
+    
+    return null; // Not a predefined action
 }
 
 // Update character stats display
