@@ -290,28 +290,76 @@ The arena stretches before you. You can move freely and take actions to survive.
 {check_win()}
 
 {action_input != "":
-    - "water" or "river" or "stream" or "lake":
+    - action_input == "water":
         -> calculate_water_outcome
-    - "run" or "sprint" or "dash":
+    - action_input == "river":
+        -> calculate_water_outcome
+    - action_input == "stream":
+        -> calculate_water_outcome
+    - action_input == "lake":
+        -> calculate_water_outcome
+    - action_input == "run":
         ~ movement_type = "run"
         -> calculate_movement_outcome
-    - "jump" or "leap" or "climb":
+    - action_input == "sprint":
+        ~ movement_type = "run"
+        -> calculate_movement_outcome
+    - action_input == "dash":
+        ~ movement_type = "run"
+        -> calculate_movement_outcome
+    - action_input == "jump":
         ~ movement_type = "jump"
         -> calculate_movement_outcome
-    - "walk" or "move" or "go":
+    - action_input == "leap":
+        ~ movement_type = "jump"
+        -> calculate_movement_outcome
+    - action_input == "climb":
+        ~ movement_type = "jump"
+        -> calculate_movement_outcome
+    - action_input == "walk":
         ~ movement_type = "walk"
         -> calculate_movement_outcome
-    - "rest" or "sleep" or "sit":
+    - action_input == "move":
+        ~ movement_type = "walk"
+        -> calculate_movement_outcome
+    - action_input == "go":
+        ~ movement_type = "walk"
+        -> calculate_movement_outcome
+    - action_input == "rest":
         -> calculate_rest_outcome
-    - "build" or "make" or "create":
+    - action_input == "sleep":
+        -> calculate_rest_outcome
+    - action_input == "sit":
+        -> calculate_rest_outcome
+    - action_input == "build":
         -> calculate_build_outcome
-    - "search" or "look" or "explore":
+    - action_input == "make":
+        -> calculate_build_outcome
+    - action_input == "create":
+        -> calculate_build_outcome
+    - action_input == "search":
         -> calculate_search_outcome
-    - "hide" or "sneak" or "stealth":
+    - action_input == "look":
+        -> calculate_search_outcome
+    - action_input == "explore":
+        -> calculate_search_outcome
+    - action_input == "hide":
         -> calculate_stealth_outcome
-    - "attack" or "fight" or "kill":
+    - action_input == "sneak":
+        -> calculate_stealth_outcome
+    - action_input == "stealth":
+        -> calculate_stealth_outcome
+    - action_input == "attack":
         -> calculate_combat_outcome
-    - "eat" or "food" or "drink":
+    - action_input == "fight":
+        -> calculate_combat_outcome
+    - action_input == "kill":
+        -> calculate_combat_outcome
+    - action_input == "eat":
+        -> calculate_food_outcome
+    - action_input == "food":
+        -> calculate_food_outcome
+    - action_input == "drink":
         -> calculate_food_outcome
     - else:
         -> calculate_generic_outcome
@@ -347,28 +395,76 @@ You are in free roam mode. Type your actions in the input box below.
 }
 
 {action_input != "":
-    - "water" or "river" or "stream" or "lake":
+    - action_input == "water":
         -> calculate_water_outcome
-    - "run" or "sprint" or "dash":
+    - action_input == "river":
+        -> calculate_water_outcome
+    - action_input == "stream":
+        -> calculate_water_outcome
+    - action_input == "lake":
+        -> calculate_water_outcome
+    - action_input == "run":
         ~ movement_type = "run"
         -> calculate_movement_outcome
-    - "jump" or "leap" or "climb":
+    - action_input == "sprint":
+        ~ movement_type = "run"
+        -> calculate_movement_outcome
+    - action_input == "dash":
+        ~ movement_type = "run"
+        -> calculate_movement_outcome
+    - action_input == "jump":
         ~ movement_type = "jump"
         -> calculate_movement_outcome
-    - "walk" or "move" or "go":
+    - action_input == "leap":
+        ~ movement_type = "jump"
+        -> calculate_movement_outcome
+    - action_input == "climb":
+        ~ movement_type = "jump"
+        -> calculate_movement_outcome
+    - action_input == "walk":
         ~ movement_type = "walk"
         -> calculate_movement_outcome
-    - "rest" or "sleep" or "sit":
+    - action_input == "move":
+        ~ movement_type = "walk"
+        -> calculate_movement_outcome
+    - action_input == "go":
+        ~ movement_type = "walk"
+        -> calculate_movement_outcome
+    - action_input == "rest":
         -> calculate_rest_outcome
-    - "build" or "make" or "create":
+    - action_input == "sleep":
+        -> calculate_rest_outcome
+    - action_input == "sit":
+        -> calculate_rest_outcome
+    - action_input == "build":
         -> calculate_build_outcome
-    - "search" or "look" or "explore":
+    - action_input == "make":
+        -> calculate_build_outcome
+    - action_input == "create":
+        -> calculate_build_outcome
+    - action_input == "search":
         -> calculate_search_outcome
-    - "hide" or "sneak" or "stealth":
+    - action_input == "look":
+        -> calculate_search_outcome
+    - action_input == "explore":
+        -> calculate_search_outcome
+    - action_input == "hide":
         -> calculate_stealth_outcome
-    - "attack" or "fight" or "kill":
+    - action_input == "sneak":
+        -> calculate_stealth_outcome
+    - action_input == "stealth":
+        -> calculate_stealth_outcome
+    - action_input == "attack":
         -> calculate_combat_outcome
-    - "eat" or "food" or "drink":
+    - action_input == "fight":
+        -> calculate_combat_outcome
+    - action_input == "kill":
+        -> calculate_combat_outcome
+    - action_input == "eat":
+        -> calculate_food_outcome
+    - action_input == "food":
+        -> calculate_food_outcome
+    - action_input == "drink":
         -> calculate_food_outcome
     - else:
         -> calculate_generic_outcome
@@ -416,12 +512,12 @@ You are in free roam mode. Type your actions in the input box below.
 === calculate_movement_outcome ===
 ~ movement_risk = 0
 {action_input != "":
-    - "run" or "sprint" or "dash":
+    - action_input == "run":
         ~ movement_type = "run"
-    - "jump" or "leap" or "climb":
-        ~ movement_type = "jump"
-    - "walk" or "move" or "go":
-        ~ movement_type = "walk"
+    - action_input == "sprint":
+        ~ movement_type = "run"
+    - action_input == "dash":
+        ~ movement_type = "run"
 }
 
 {player_injuries > 2:
