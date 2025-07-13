@@ -671,6 +671,17 @@ async function handleFreeRoamAction(action) {
     const typingIndicator = document.getElementById('typingIndicator');
     const storyContainer = document.getElementById('storyContainer');
     
+    // Check if player is dead
+    if (story && story.variablesState && story.variablesState["player_dead"]) {
+        const deathText = document.createElement('p');
+        deathText.className = 'fade-in';
+        deathText.style.color = '#ff6b6b';
+        deathText.textContent = "You are dead. The Games are over for you.";
+        storyContainer.appendChild(deathText);
+        storyContainer.scrollTop = storyContainer.scrollHeight;
+        return;
+    }
+    
     // Show typing indicator
     typingIndicator.style.display = 'block';
     
@@ -685,12 +696,12 @@ async function handleFreeRoamAction(action) {
     
     try {
         // Update character data from story variables
-        charData.name = story.variablesState["name"] || "";
-        charData.district = story.variablesState["district"] || "";
-        charData.age = story.variablesState["age"] || 0;
-        charData.health = story.variablesState["health"] || 100;
-        charData.weapon = story.variablesState["weapon"] || "";
-        charData.inventory = story.variablesState["inventory"] || "";
+        charData.name = story.variablesState["player_name"] || story.variablesState["name"] || "";
+        charData.district = story.variablesState["player_district"] || story.variablesState["district"] || "";
+        charData.age = story.variablesState["player_age"] || story.variablesState["age"] || 0;
+        charData.health = story.variablesState["player_health"] || story.variablesState["health"] || 100;
+        charData.weapon = story.variablesState["player_weapon"] || story.variablesState["weapon"] || "";
+        charData.inventory = story.variablesState["player_inventory"] || story.variablesState["inventory"] || "";
         charData.trainingScore = story.variablesState["training_score"] || 0;
         charData.sponsorPoints = story.variablesState["sponsor_points"] || 0;
 
@@ -761,36 +772,68 @@ async function handleFreeRoamAction(action) {
 
 // Update character stats display
 function updateCharacterStats() {
-    // Update basic stats
-    document.getElementById('charName').textContent = story.variablesState["name"] || "-";
-    document.getElementById('charDistrict').textContent = story.variablesState["district"] || "-";
-    document.getElementById('charAge').textContent = story.variablesState["age"] || "-";
-    document.getElementById('charWeapon').textContent = story.variablesState["weapon"] || "-";
-    document.getElementById('charInventory').textContent = story.variablesState["inventory"] || "-";
+    if (!story || !story.variablesState) return;
+    
+    // Update basic stats from Ink variables
+    const playerName = story.variablesState["player_name"] || story.variablesState["name"] || "-";
+    const playerDistrict = story.variablesState["player_district"] || story.variablesState["district"] || "-";
+    const playerAge = story.variablesState["player_age"] || story.variablesState["age"] || "-";
+    const playerWeapon = story.variablesState["player_weapon"] || story.variablesState["weapon"] || "-";
+    const playerInventory = story.variablesState["player_inventory"] || story.variablesState["inventory"] || "-";
+    const playerHealth = story.variablesState["player_health"] || story.variablesState["health"] || 100;
+    const daysSurvived = story.variablesState["days_survived"] || 0;
+    const tributesRemaining = story.variablesState["tributes_remaining"] || 24;
+    
+    // Update UI elements
+    document.getElementById('charName').textContent = playerName;
+    document.getElementById('charDistrict').textContent = playerDistrict;
+    document.getElementById('charAge').textContent = playerAge;
+    document.getElementById('charWeapon').textContent = playerWeapon;
+    document.getElementById('charInventory').textContent = playerInventory;
     
     // Update health bar with animation
-    const health = story.variablesState["health"] || 100;
     const healthBar = document.getElementById('health');
     const healthValue = document.getElementById('healthValue');
     const currentWidth = parseInt(healthBar.style.width) || 100;
-    const targetWidth = health;
+    const targetWidth = playerHealth;
     
     // Animate health bar change
     if (currentWidth !== targetWidth) {
         animateHealthBar(currentWidth, targetWidth);
     }
     
-    healthValue.textContent = `${health}%`;
+    healthValue.textContent = `${playerHealth}%`;
     
     // Update character data object
-    charData.name = story.variablesState["name"] || "";
-    charData.district = story.variablesState["district"] || "";
-    charData.age = story.variablesState["age"] || 0;
-    charData.health = health;
-    charData.weapon = story.variablesState["weapon"] || "";
-    charData.inventory = story.variablesState["inventory"] || "";
+    charData.name = playerName;
+    charData.district = playerDistrict;
+    charData.age = playerAge;
+    charData.health = playerHealth;
+    charData.weapon = playerWeapon;
+    charData.inventory = playerInventory;
     charData.trainingScore = story.variablesState["training_score"] || 0;
     charData.sponsorPoints = story.variablesState["sponsor_points"] || 0;
+    
+    // Add arena info if available
+    if (daysSurvived > 0 || tributesRemaining < 24) {
+        const arenaInfo = document.createElement('div');
+        arenaInfo.style.cssText = `
+            color: #ffd93d;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            text-align: center;
+        `;
+        arenaInfo.textContent = `Day ${daysSurvived + 1} • ${tributesRemaining} tributes remain`;
+        
+        // Remove old arena info if it exists
+        const oldArenaInfo = document.querySelector('.arena-info');
+        if (oldArenaInfo) {
+            oldArenaInfo.remove();
+        }
+        
+        arenaInfo.className = 'arena-info';
+        document.querySelector('.character-stats').appendChild(arenaInfo);
+    }
 }
 
 // Animate health bar
