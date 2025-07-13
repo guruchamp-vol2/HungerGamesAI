@@ -299,7 +299,7 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
     - else:
         -> calculate_generic_outcome
 }
--> END
+-> free_roam
 
 === function check_death ===
 {player_dead:
@@ -352,7 +352,7 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
     - else:
         -> calculate_generic_outcome
 }
--> END
+-> free_roam
 
 === calculate_water_outcome ===
 ~ water_risk = 0
@@ -390,7 +390,7 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
     ~ player_thirst -= 10
     ~ player_energy += 5
 }
--> END
+-> free_roam
 
 === calculate_movement_outcome ===
 ~ movement_risk = 0
@@ -465,7 +465,7 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
     ~ action_result = "You " + action_input + " and make steady progress. The movement is uneventful but effective. You're making your way through the arena as planned."
     ~ player_energy -= 2
 }
--> END
+-> free_roam
 
 === calculate_rest_outcome ===
 ~ rest_risk = 0
@@ -507,7 +507,7 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
     ~ player_energy += 15
     ~ player_morale += 5
 }
--> END
+-> free_roam
 
 === calculate_build_outcome ===
 ~ build_risk = 0
@@ -543,7 +543,7 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
     ~ player_energy -= 5
     ~ player_morale += 5
 }
--> END
+-> free_roam
 
 === calculate_search_outcome ===
 ~ search_risk = 0
@@ -586,7 +586,7 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
     ~ player_energy -= 5
     ~ player_morale -= 5
 }
--> END
+-> free_roam
 
 === calculate_stealth_outcome ===
 ~ stealth_risk = 0
@@ -628,7 +628,7 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
     ~ player_morale += 3
     ~ detection_risk -= 5
 }
--> END
+-> free_roam
 
 === calculate_combat_outcome ===
 ~ combat_risk = 0
@@ -676,7 +676,7 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
     ~ player_morale -= 10
     ~ escape_chance -= 10
 }
--> END
+-> free_roam
 
 === calculate_food_outcome ===
 ~ food_risk = 0
@@ -715,7 +715,7 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
     ~ player_morale += 5
     ~ food_available -= 5
 }
--> END
+-> free_roam
 
 === calculate_generic_outcome ===
 ~ generic_risk = 0
@@ -745,4 +745,4 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
     ~ player_energy -= 5
     ~ player_morale += 2
 }
--> END
+-> free_roam
