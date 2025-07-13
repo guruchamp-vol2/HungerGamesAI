@@ -884,7 +884,7 @@ function handlePredefinedAction(action) {
             // Add sponsor points (as mentioned in README)
             story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 7;
         }
-        return "You scale a tall tree for a better vantage point. From your elevated position, you can see further across the arena and spot potential threats or resources.";
+        return "You carefully scale a massive oak tree, your hands finding purchase in the rough bark. From your elevated perch, you gain a commanding view of the arena - to the north, you spot a clearing that might contain supplies, while to the east, you notice movement that could be other tributes. The height gives you both safety and strategic advantage.";
     }
     
     // Search for water action
@@ -895,7 +895,7 @@ function handlePredefinedAction(action) {
             story.variablesState["tributes_remaining"] = Math.max((story.variablesState["tributes_remaining"] || 24) - 2, 1);
             story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 5;
         }
-        return "You find a muddy stream. It's risky but drinkable. You carefully filter the water through your clothing before drinking.";
+        return "You follow the sound of running water and discover a small stream cutting through the arena. The water is murky but flowing, which reduces the risk of contamination. You carefully filter it through your clothing, removing debris before taking long, grateful gulps. The cool water revitalizes you, and you fill your water bottle for later.";
     }
     
     // Hide action
@@ -906,7 +906,7 @@ function handlePredefinedAction(action) {
             story.variablesState["tributes_remaining"] = Math.max((story.variablesState["tributes_remaining"] || 24) - 1, 1);
             story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 3;
         }
-        return "You crawl under thick brush, heart pounding. The dense foliage provides excellent cover from prying eyes.";
+        return "You slip into a dense thicket of brambles and underbrush, your movements silent and deliberate. The sharp thorns scratch at your skin, but the pain is worth the concealment. From your hiding spot, you can see without being seen, and you use this advantage to observe the arena around you. The rustling of leaves and distant sounds of other tributes remind you that you're not alone.";
     }
     
     // Attack action
@@ -916,7 +916,7 @@ function handlePredefinedAction(action) {
             story.variablesState["tributes_remaining"] = Math.max((story.variablesState["tributes_remaining"] || 24) - 1, 1);
             story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 10;
         }
-        return "You lunge at a nearby tribute. Blood splashes as you engage in a fierce battle for survival.";
+        return "You spot a tribute from District 7 moving through the trees ahead. Adrenaline courses through your veins as you decide to engage. You charge forward, your weapon raised, and the tribute turns just in time to see you coming. The clash is brutal and decisive - steel meets steel, and the arena echoes with the sounds of combat. This fight will determine which of you survives.";
     }
     
     // Eat action
@@ -926,7 +926,7 @@ function handlePredefinedAction(action) {
             story.variablesState["days_survived"] = (story.variablesState["days_survived"] || 0) + 1;
             story.variablesState["sponsor_points"] = (story.variablesState["sponsor_points"] || 0) + 2;
         }
-        return "You eat some of your supplies, regaining a bit of strength. The food helps restore your energy.";
+        return "You find a relatively safe spot behind a fallen log and carefully ration your supplies. The bread is stale but filling, and the dried meat provides much-needed protein. As you eat, you feel your strength returning and your mind becoming sharper. You save some food for later, knowing that in the arena, every resource is precious.";
     }
     
     // Run to woods action

@@ -321,22 +321,71 @@ app.post('/api/free-roam', async (req, res) => {
         console.log(`Player stats:`, playerStats);
         
         if (!openai) {
-            // Fallback response when OpenAI is not configured
-            const fallbackResponses = [
-                `You ${action.toLowerCase()}, and the arena responds with unexpected intensity. The Games are unpredictable, and every action carries weight.`,
-                `As you ${action.toLowerCase()}, you feel the eyes of the Capitol watching. The arena's harsh environment tests your resolve.`,
-                `Your attempt to ${action.toLowerCase()} meets with mixed results. In the Hunger Games, nothing is guaranteed, and survival requires constant adaptation.`,
-                `The arena's unforgiving nature makes ${action.toLowerCase()} a challenge. You must stay alert and resourceful to survive.`,
-                `You ${action.toLowerCase()}, and the Games remind you that every decision could be your last. The arena is both your battlefield and your prison.`,
-                `As you ${action.toLowerCase()}, you sense the presence of other tributes nearby. The Hunger Games demand both courage and caution.`,
-                `Your ${action.toLowerCase()} action reveals the true nature of the arena - beautiful yet deadly, promising yet perilous.`,
-                `The arena responds to your ${action.toLowerCase()} with the cold indifference of the Games themselves. Survival here requires more than just skill.`,
-                `You ${action.toLowerCase()}, and the Capitol's cameras capture every moment. In the Hunger Games, every action is a performance.`,
-                `Your attempt to ${action.toLowerCase()} shows the harsh reality of the arena. Here, every choice could mean the difference between life and death.`
+            // Enhanced fallback responses when OpenAI is not configured
+            const actionLower = action.toLowerCase();
+            
+            // Specific action-based responses
+            if (actionLower.includes('kill') || actionLower.includes('die') || actionLower.includes('suicide')) {
+                const deathResponses = [
+                    "You stand motionless, accepting your fate. A tribute from District 2 spots you and approaches cautiously. They raise their weapon, and in that final moment, you feel a strange peace. The cannon fires, and your story ends here in the arena.",
+                    "You make no attempt to defend yourself as footsteps approach. A Career tribute from District 1 finds you and, seeing your surrender, hesitates briefly before delivering the final blow. The Games claim another victim.",
+                    "You close your eyes and wait. The sound of rustling leaves grows closer, and you feel the cold steel of a blade against your throat. Your last thought is of home as the cannon echoes through the arena."
+                ];
+                const randomResponse = deathResponses[Math.floor(Math.random() * deathResponses.length)];
+                return res.json({ response: randomResponse });
+            }
+            
+            if (actionLower.includes('search') || actionLower.includes('look') || actionLower.includes('explore')) {
+                const searchResponses = [
+                    "You carefully scan your surroundings, your eyes darting between the dense underbrush and the towering trees. In the distance, you spot what appears to be a small stream, and closer by, you notice some edible berries growing near a fallen log.",
+                    "Your exploration reveals a hidden alcove beneath a massive oak tree. The ground here is softer, suggesting it might be a good place to rest. You also find some medicinal herbs that could be useful if you get injured.",
+                    "As you search the area, you discover signs of other tributes - footprints in the mud, broken branches, and the remains of a small fire. Someone was here recently, and they might still be nearby."
+                ];
+                const randomResponse = searchResponses[Math.floor(Math.random() * searchResponses.length)];
+                return res.json({ response: randomResponse });
+            }
+            
+            if (actionLower.includes('hide') || actionLower.includes('sneak') || actionLower.includes('stealth')) {
+                const stealthResponses = [
+                    "You slip behind a thick cluster of bushes, your movements silent and deliberate. From your hiding spot, you can see two tributes arguing in the distance. They haven't noticed you, and you use this opportunity to observe their weapons and fighting styles.",
+                    "You find a hollow in the base of a large tree and squeeze inside. The cramped space is uncomfortable, but it provides excellent cover. You can hear footsteps passing by, and you hold your breath until they fade away.",
+                    "You blend into the shadows, using your training to move without making a sound. Your patience pays off as you spot a tribute from District 3 setting up some kind of electronic device. They're completely unaware of your presence."
+                ];
+                const randomResponse = stealthResponses[Math.floor(Math.random() * stealthResponses.length)];
+                return res.json({ response: randomResponse });
+            }
+            
+            if (actionLower.includes('attack') || actionLower.includes('fight') || actionLower.includes('kill')) {
+                const combatResponses = [
+                    "You charge forward, your weapon raised. The tribute you're targeting turns just in time to see you coming. They raise their own weapon in defense, and the clash of steel echoes through the arena. This fight will be brutal and decisive.",
+                    "You launch your attack with precision, aiming for a vulnerable spot. Your opponent is skilled, though, and they dodge your strike. The battle becomes a deadly dance of attack and counter-attack.",
+                    "You strike first, catching your enemy off guard. They stumble backward, but quickly recover and return your aggression. The fight is intense, and both of you know only one will walk away from this encounter."
+                ];
+                const randomResponse = combatResponses[Math.floor(Math.random() * combatResponses.length)];
+                return res.json({ response: randomResponse });
+            }
+            
+            if (actionLower.includes('eat') || actionLower.includes('food') || actionLower.includes('drink')) {
+                const sustenanceResponses = [
+                    "You carefully examine the berries before eating them, remembering your training. They're safe, and the sweet taste provides much-needed energy. You also find a small stream nearby and drink deeply, feeling your strength return.",
+                    "You ration your supplies carefully, eating just enough to maintain your energy without wasting precious resources. The food is basic but sustaining, and you feel more alert after your meal.",
+                    "You discover some edible roots and berries in the area. After a cautious taste test, you eat what you can safely identify. The natural food provides different nutrients than your supplies, and you feel healthier."
+                ];
+                const randomResponse = sustenanceResponses[Math.floor(Math.random() * sustenanceResponses.length)];
+                return res.json({ response: randomResponse });
+            }
+            
+            // Generic but more descriptive responses for other actions
+            const enhancedFallbackResponses = [
+                `You ${action.toLowerCase()}, and the arena's harsh reality becomes immediately apparent. The wind carries the distant sound of a cannon, reminding you that death is always close in the Hunger Games.`,
+                `As you ${action.toLowerCase()}, you feel the weight of the Capitol's cameras following your every move. The arena's unpredictable terrain challenges your every step, and you must stay alert to survive.`,
+                `Your attempt to ${action.toLowerCase()} reveals the true nature of the Games - beautiful yet deadly. The arena's natural beauty masks its lethal purpose, and every action could attract unwanted attention.`,
+                `You ${action.toLowerCase()}, and the Games remind you that survival requires more than just physical strength. Your training, your wits, and your ability to adapt will determine your fate.`,
+                `The arena responds to your ${action.toLowerCase()} with its characteristic indifference. Here, every choice has consequences, and the line between life and death is razor-thin.`
             ];
             
-            const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-            console.log('Using fallback response (no OpenAI)');
+            const randomResponse = enhancedFallbackResponses[Math.floor(Math.random() * enhancedFallbackResponses.length)];
+            console.log('Using enhanced fallback response (no OpenAI)');
             return res.json({ response: randomResponse });
         }
         
