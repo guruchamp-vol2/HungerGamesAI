@@ -325,182 +325,114 @@ app.post('/api/free-roam', async (req, res) => {
         
         if (!openai) {
             console.log('[Server Debug] OpenAI not configured, using fallback responses');
-            // Enhanced fallback responses when OpenAI is not configured
             const actionLower = action.toLowerCase();
-            
-            // Specific action-based responses
-            if (actionLower.includes('kill') || actionLower.includes('die') || actionLower.includes('suicide')) {
-                const deathResponses = [
-                    "You stand motionless, accepting your fate. A tribute from District 2 spots you and approaches cautiously. They raise their weapon, and in that final moment, you feel a strange peace. The cannon fires, and your story ends here in the arena.",
-                    "You make no attempt to defend yourself as footsteps approach. A Career tribute from District 1 finds you and, seeing your surrender, hesitates briefly before delivering the final blow. The Games claim another victim.",
-                    "You close your eyes and wait. The sound of rustling leaves grows closer, and you feel the cold steel of a blade against your throat. Your last thought is of home as the cannon echoes through the arena."
-                ];
-                const randomResponse = deathResponses[Math.floor(Math.random() * deathResponses.length)];
-                return res.json({ response: randomResponse });
+            // Helper: random int
+            function randInt(max) { return Math.floor(Math.random() * max); }
+            // Helper: lose health
+            function loseHealth(amount) {
+                if (playerStats && typeof playerStats.health === 'number') {
+                    playerStats.health = Math.max(0, playerStats.health - amount);
+                }
             }
-            
-            if (actionLower.includes('search') || actionLower.includes('look') || actionLower.includes('explore')) {
-                const searchResponses = [
-                    "You carefully scan your surroundings, your eyes darting between the dense underbrush and the towering trees. In the distance, you spot what appears to be a small stream, and closer by, you notice some edible berries growing near a fallen log.",
-                    "Your exploration reveals a hidden alcove beneath a massive oak tree. The ground here is softer, suggesting it might be a good place to rest. You also find some medicinal herbs that could be useful if you get injured.",
-                    "As you search the area, you discover signs of other tributes - footprints in the mud, broken branches, and the remains of a small fire. Someone was here recently, and they might still be nearby."
-                ];
-                const randomResponse = searchResponses[Math.floor(Math.random() * searchResponses.length)];
-                return res.json({ response: randomResponse });
+            // Helper: enemy encounter
+            function enemyAttack() {
+                loseHealth(20 + randInt(20));
+                return `Suddenly, a tribute leaps from the shadows and attacks! You fight desperately, taking some hits before you manage to escape. Your health is now ${playerStats.health}. The Games just got more dangerous.`;
             }
-            
-            if (actionLower.includes('hide') || actionLower.includes('sneak') || actionLower.includes('stealth')) {
-                const stealthResponses = [
-                    "You slip behind a thick cluster of bushes, your movements silent and deliberate. From your hiding spot, you can see two tributes arguing in the distance. They haven't noticed you, and you use this opportunity to observe their weapons and fighting styles.",
-                    "You find a hollow in the base of a large tree and squeeze inside. The cramped space is uncomfortable, but it provides excellent cover. You can hear footsteps passing by, and you hold your breath until they fade away.",
-                    "You blend into the shadows, using your training to move without making a sound. Your patience pays off as you spot a tribute from District 3 setting up some kind of electronic device. They're completely unaware of your presence."
-                ];
-                const randomResponse = stealthResponses[Math.floor(Math.random() * stealthResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            
-            if (actionLower.includes('attack') || actionLower.includes('fight') || actionLower.includes('kill')) {
-                const combatResponses = [
-                    "You charge forward, your weapon raised. The tribute you're targeting turns just in time to see you coming. They raise their own weapon in defense, and the clash of steel echoes through the arena. This fight will be brutal and decisive.",
-                    "You launch your attack with precision, aiming for a vulnerable spot. Your opponent is skilled, though, and they dodge your strike. The battle becomes a deadly dance of attack and counter-attack.",
-                    "You strike first, catching your enemy off guard. They stumble backward, but quickly recover and return your aggression. The fight is intense, and both of you know only one will walk away from this encounter."
-                ];
-                const randomResponse = combatResponses[Math.floor(Math.random() * combatResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            
-            if (actionLower.includes('eat') || actionLower.includes('food') || actionLower.includes('drink')) {
-                const sustenanceResponses = [
-                    "You carefully examine the berries before eating them, remembering your training. They're safe, and the sweet taste provides much-needed energy. You also find a small stream nearby and drink deeply, feeling your strength return.",
-                    "You ration your supplies carefully, eating just enough to maintain your energy without wasting precious resources. The food is basic but sustaining, and you feel more alert after your meal.",
-                    "You discover some edible roots and berries in the area. After a cautious taste test, you eat what you can safely identify. The natural food provides different nutrients than your supplies, and you feel healthier."
-                ];
-                const randomResponse = sustenanceResponses[Math.floor(Math.random() * sustenanceResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            
-            // Action-specific responses with acknowledgment and consequences
+            // Water actions
             if (actionLower.includes('water') || actionLower.includes('river') || actionLower.includes('stream') || actionLower.includes('lake')) {
+                if (randInt(4) === 0) {
+                    loseHealth(10);
+                    return res.json({ response: `You drink from the water, but something tastes off. You feel sick and lose some health. Your health is now ${playerStats.health}.` });
+                }
+                if (randInt(4) === 0) {
+                    return res.json({ response: enemyAttack() });
+                }
                 const waterResponses = [
                     `Running to the water is a smart choice - hydration is crucial for survival. You sprint toward the sound of flowing water, your heart pounding with urgency. As you reach the stream, you quickly scan the area for other tributes before kneeling down to drink. The cool water refreshes you, but you know you can't stay here long - water sources are prime hunting grounds.`,
                     `The water calls to you like a siren's song in this deadly arena. You make your way toward the river, moving carefully to avoid detection. The water is clear and inviting, and you drink deeply, feeling your strength return. However, you spot footprints in the mud nearby - someone else has been here recently.`,
                     `Heading toward water is always a good strategic move. You navigate through the underbrush toward the sound of running water. The stream you find is small but clean, and you drink your fill while keeping watch. The water source could be valuable, but it also makes you a target - you'll need to move on soon.`
                 ];
-                const randomResponse = waterResponses[Math.floor(Math.random() * waterResponses.length)];
+                const randomResponse = waterResponses[randInt(waterResponses.length)];
                 return res.json({ response: randomResponse });
             }
-            
+            // Run actions
             if (actionLower.includes('run') || actionLower.includes('sprint') || actionLower.includes('dash')) {
+                if (randInt(4) === 0) {
+                    return res.json({ response: enemyAttack() });
+                }
+                if (randInt(4) === 0) {
+                    loseHealth(10);
+                    return res.json({ response: `You run too fast and trip over a root, scraping your knee. You lose some health. Your health is now ${playerStats.health}.` });
+                }
                 const runResponses = [
                     `Running is a good way to cover ground quickly, but it also makes you a target. You sprint through the arena, your feet pounding against the earth. The movement feels good, but you know the sound could attract other tributes. You'll need to find cover soon.`,
                     `You break into a run, putting distance between yourself and potential threats. The wind rushes past your face as you move, and you feel a surge of adrenaline. Running gives you speed, but it also burns energy you might need later. You'll have to be strategic about when to use this advantage.`,
                     `Running through the arena is both exhilarating and dangerous. You pick up speed, your training helping you navigate the terrain efficiently. The movement helps you scout the area quickly, but you're also making noise that could draw attention. You'll need to balance speed with stealth.`
                 ];
-                const randomResponse = runResponses[Math.floor(Math.random() * runResponses.length)];
+                const randomResponse = runResponses[randInt(runResponses.length)];
                 return res.json({ response: randomResponse });
             }
-            
+            // Jump/Climb actions
             if (actionLower.includes('jump') || actionLower.includes('leap') || actionLower.includes('climb')) {
+                if (randInt(4) === 0) {
+                    loseHealth(15);
+                    return res.json({ response: `You misjudge your jump and fall, injuring yourself. You lose some health. Your health is now ${playerStats.health}.` });
+                }
+                if (randInt(4) === 0) {
+                    return res.json({ response: enemyAttack() });
+                }
                 const jumpResponses = [
                     `Jumping can help you overcome obstacles and reach higher ground - a smart tactical choice. You leap over a fallen log, your muscles working efficiently. The movement gives you a better view of the surrounding area, and you spot a potential shelter in the distance. Height advantage could be crucial in the arena.`,
                     `You jump to clear an obstacle, your training paying off as you land gracefully. The movement helps you assess your surroundings from a different angle, and you notice some useful terrain features. Jumping burns energy, but the tactical advantage might be worth it.`,
                     `A well-timed jump can mean the difference between life and death in the arena. You leap over a small stream, using the momentum to carry you forward. The movement helps you avoid getting wet, which could slow you down. You'll need to conserve your energy for more critical moments.`
                 ];
-                const randomResponse = jumpResponses[Math.floor(Math.random() * jumpResponses.length)];
+                const randomResponse = jumpResponses[randInt(jumpResponses.length)];
                 return res.json({ response: randomResponse });
             }
-            
+            // Walk/Move actions
             if (actionLower.includes('walk') || actionLower.includes('move') || actionLower.includes('go')) {
+                if (randInt(5) === 0) {
+                    return res.json({ response: enemyAttack() });
+                }
                 const walkResponses = [
                     `Moving carefully through the arena is always a good strategy. You walk with purpose, your senses alert for any signs of danger. The steady pace conserves your energy while allowing you to observe your surroundings. Every step could lead to opportunity or threat.`,
                     `You move forward cautiously, your training helping you navigate the terrain efficiently. Walking allows you to scout the area without drawing too much attention. You notice subtle signs of other tributes - broken branches, disturbed earth - and adjust your path accordingly.`,
                     `Walking through the arena gives you time to think and plan. You move deliberately, using the opportunity to assess your situation. The slower pace helps you spot resources and avoid hazards, but it also makes you vulnerable to faster-moving threats.`
                 ];
-                const randomResponse = walkResponses[Math.floor(Math.random() * walkResponses.length)];
+                const randomResponse = walkResponses[randInt(walkResponses.length)];
                 return res.json({ response: randomResponse });
             }
-            
+            // Rest actions
             if (actionLower.includes('rest') || actionLower.includes('sleep') || actionLower.includes('sit')) {
+                if (randInt(3) === 0) {
+                    return res.json({ response: enemyAttack() });
+                }
+                if (randInt(4) === 0) {
+                    loseHealth(10);
+                    return res.json({ response: `You try to rest, but are startled awake by a noise. You scramble to your feet, heart pounding, and realize you scraped yourself on a sharp rock. Your health is now ${playerStats.health}.` });
+                }
                 const restResponses = [
                     `Rest is essential for survival, but choosing when and where is critical. You find a relatively safe spot and settle in, keeping your weapon close at hand. The brief rest helps restore your energy, but you remain alert for any approaching threats. You can't afford to let your guard down completely.`,
                     `Taking a moment to rest is smart - exhaustion can be as deadly as any weapon. You sit down carefully, choosing a position that gives you a good view of your surroundings. The rest helps clear your mind and restore some strength, but you know you can't stay here long.`,
                     `Resting in the arena is a calculated risk. You find a sheltered spot and take a moment to recover, your senses still sharp. The brief pause helps you assess your situation and plan your next move. Rest is necessary, but so is staying vigilant.`
                 ];
-                const randomResponse = restResponses[Math.floor(Math.random() * restResponses.length)];
+                const randomResponse = restResponses[randInt(restResponses.length)];
                 return res.json({ response: randomResponse });
             }
-            
+            // Build/Craft actions
             if (actionLower.includes('build') || actionLower.includes('make') || actionLower.includes('create')) {
+                if (randInt(4) === 0) {
+                    return res.json({ response: enemyAttack() });
+                }
                 const buildResponses = [
                     `Using your skills to create something useful is excellent strategy. You work quickly, using available materials to construct a simple shelter or tool. The effort pays off as you create something that could help you survive longer. Crafting shows resourcefulness that sponsors might notice.`,
                     `Building something in the arena demonstrates both skill and patience. You carefully assemble materials, creating something that could give you an advantage. The process requires focus, but the result could be crucial for your survival. Your training is paying off.`,
                     `Creating something useful shows real survival instincts. You work methodically, turning available resources into something valuable. The effort might attract attention, but the benefits could outweigh the risks. Your ingenuity could be your greatest weapon.`
                 ];
-                const randomResponse = buildResponses[Math.floor(Math.random() * buildResponses.length)];
+                const randomResponse = buildResponses[randInt(buildResponses.length)];
                 return res.json({ response: randomResponse });
             }
-            
-            // Action-specific responses with acknowledgment and consequences
-            if (actionLower.includes('water') || actionLower.includes('river') || actionLower.includes('stream') || actionLower.includes('lake')) {
-                const waterResponses = [
-                    `Running to the water is a smart choice - hydration is crucial for survival. You sprint toward the sound of flowing water, your heart pounding with urgency. As you reach the stream, you quickly scan the area for other tributes before kneeling down to drink. The cool water refreshes you, but you know you can't stay here long - water sources are prime hunting grounds.`,
-                    `The water calls to you like a siren's song in this deadly arena. You make your way toward the river, moving carefully to avoid detection. The water is clear and inviting, and you drink deeply, feeling your strength return. However, you spot footprints in the mud nearby - someone else has been here recently.`,
-                    `Heading toward water is always a good strategic move. You navigate through the underbrush toward the sound of running water. The stream you find is small but clean, and you drink your fill while keeping watch. The water source could be valuable, but it also makes you a target - you'll need to move on soon.`
-                ];
-                const randomResponse = waterResponses[Math.floor(Math.random() * waterResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            
-            if (actionLower.includes('run') || actionLower.includes('sprint') || actionLower.includes('dash')) {
-                const runResponses = [
-                    `Running is a good way to cover ground quickly, but it also makes you a target. You sprint through the arena, your feet pounding against the earth. The movement feels good, but you know the sound could attract other tributes. You'll need to find cover soon.`,
-                    `You break into a run, putting distance between yourself and potential threats. The wind rushes past your face as you move, and you feel a surge of adrenaline. Running gives you speed, but it also burns energy you might need later. You'll have to be strategic about when to use this advantage.`,
-                    `Running through the arena is both exhilarating and dangerous. You pick up speed, your training helping you navigate the terrain efficiently. The movement helps you scout the area quickly, but you're also making noise that could draw attention. You'll need to balance speed with stealth.`
-                ];
-                const randomResponse = runResponses[Math.floor(Math.random() * runResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            
-            if (actionLower.includes('jump') || actionLower.includes('leap') || actionLower.includes('climb')) {
-                const jumpResponses = [
-                    `Jumping can help you overcome obstacles and reach higher ground - a smart tactical choice. You leap over a fallen log, your muscles working efficiently. The movement gives you a better view of the surrounding area, and you spot a potential shelter in the distance. Height advantage could be crucial in the arena.`,
-                    `You jump to clear an obstacle, your training paying off as you land gracefully. The movement helps you assess your surroundings from a different angle, and you notice some useful terrain features. Jumping burns energy, but the tactical advantage might be worth it.`,
-                    `A well-timed jump can mean the difference between life and death in the arena. You leap over a small stream, using the momentum to carry you forward. The movement helps you avoid getting wet, which could slow you down. You'll need to conserve your energy for more critical moments.`
-                ];
-                const randomResponse = jumpResponses[Math.floor(Math.random() * jumpResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            
-            if (actionLower.includes('walk') || actionLower.includes('move') || actionLower.includes('go')) {
-                const walkResponses = [
-                    `Moving carefully through the arena is always a good strategy. You walk with purpose, your senses alert for any signs of danger. The steady pace conserves your energy while allowing you to observe your surroundings. Every step could lead to opportunity or threat.`,
-                    `You move forward cautiously, your training helping you navigate the terrain efficiently. Walking allows you to scout the area without drawing too much attention. You notice subtle signs of other tributes - broken branches, disturbed earth - and adjust your path accordingly.`,
-                    `Walking through the arena gives you time to think and plan. You move deliberately, using the opportunity to assess your situation. The slower pace helps you spot resources and avoid hazards, but it also makes you vulnerable to faster-moving threats.`
-                ];
-                const randomResponse = walkResponses[Math.floor(Math.random() * walkResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            
-            if (actionLower.includes('rest') || actionLower.includes('sleep') || actionLower.includes('sit')) {
-                const restResponses = [
-                    `Rest is essential for survival, but choosing when and where is critical. You find a relatively safe spot and settle in, keeping your weapon close at hand. The brief rest helps restore your energy, but you remain alert for any approaching threats. You can't afford to let your guard down completely.`,
-                    `Taking a moment to rest is smart - exhaustion can be as deadly as any weapon. You sit down carefully, choosing a position that gives you a good view of your surroundings. The rest helps clear your mind and restore some strength, but you know you can't stay here long.`,
-                    `Resting in the arena is a calculated risk. You find a sheltered spot and take a moment to recover, your senses still sharp. The brief pause helps you assess your situation and plan your next move. Rest is necessary, but so is staying vigilant.`
-                ];
-                const randomResponse = restResponses[Math.floor(Math.random() * restResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            
-            if (actionLower.includes('build') || actionLower.includes('make') || actionLower.includes('create')) {
-                const buildResponses = [
-                    `Using your skills to create something useful is excellent strategy. You work quickly, using available materials to construct a simple shelter or tool. The effort pays off as you create something that could help you survive longer. Crafting shows resourcefulness that sponsors might notice.`,
-                    `Building something in the arena demonstrates both skill and patience. You carefully assemble materials, creating something that could give you an advantage. The process requires focus, but the result could be crucial for your survival. Your training is paying off.`,
-                    `Creating something useful shows real survival instincts. You work methodically, turning available resources into something valuable. The effort might attract attention, but the benefits could outweigh the risks. Your ingenuity could be your greatest weapon.`
-                ];
-                const randomResponse = buildResponses[Math.floor(Math.random() * buildResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            
             // Generic but more action-aware responses for other actions
             const enhancedFallbackResponses = [
                 `"${action}" - that's an interesting choice. You ${action.toLowerCase()}, and immediately the arena responds to your decision. The action feels purposeful, and you sense that every choice you make is being watched by both the Capitol and your fellow tributes. Your training kicks in, helping you execute the action effectively.`,
@@ -509,8 +441,7 @@ app.post('/api/free-roam', async (req, res) => {
                 `You choose to ${action.toLowerCase()}, and the arena responds to your initiative. The action feels natural, as if you're finally finding your rhythm in this deadly game. Every choice is a step toward survival, and you're learning to trust your instincts.`,
                 `"${action}" - good thinking. You ${action.toLowerCase()}, and the arena's dynamics shift slightly. The action helps you better position yourself for whatever comes next. You're learning that in the Games, every action is both a risk and an opportunity.`
             ];
-            
-            const randomResponse = enhancedFallbackResponses[Math.floor(Math.random() * enhancedFallbackResponses.length)];
+            const randomResponse = enhancedFallbackResponses[randInt(enhancedFallbackResponses.length)];
             console.log('[Server Debug] Using enhanced fallback response (no OpenAI):', randomResponse);
             return res.json({ response: randomResponse });
         }
