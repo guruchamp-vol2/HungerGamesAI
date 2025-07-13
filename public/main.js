@@ -618,6 +618,13 @@ function continueStory() {
 
     // Update character stats
     updateCharacterStats();
+    
+    // Initialize arena if we're in free roam mode
+    if (story && story.currentTags && story.currentTags.includes('free_roam')) {
+        if (enemies.length === 0) {
+            initializeArena();
+        }
+    }
 }
 
 // Display choices
@@ -695,6 +702,31 @@ async function handleFreeRoamAction(action) {
     storyContainer.scrollTop = storyContainer.scrollHeight;
     
     try {
+        // Handle movement commands
+        const movementResult = handleMovement(action);
+        if (movementResult) {
+            // Move enemies after player moves
+            moveEnemies();
+            
+            // Check for encounters
+            const encounterResult = checkEncounters();
+            if (encounterResult) {
+                const encounterText = document.createElement('p');
+                encounterText.className = 'fade-in';
+                encounterText.style.color = '#e0e0e0';
+                encounterText.textContent = encounterResult;
+                storyContainer.appendChild(encounterText);
+            }
+            
+            // Update character stats
+            updateCharacterStats();
+            
+            // Hide typing indicator
+            typingIndicator.style.display = 'none';
+            storyContainer.scrollTop = storyContainer.scrollHeight;
+            return;
+        }
+        
         // Update character data from story variables
         charData.name = story.variablesState["player_name"] || story.variablesState["name"] || "";
         charData.district = story.variablesState["player_district"] || story.variablesState["district"] || "";
@@ -770,6 +802,54 @@ async function handleFreeRoamAction(action) {
     }
 }
 
+// Handle movement commands
+function handleMovement(action) {
+    const actionLower = action.toLowerCase();
+    
+    // Movement commands
+    if (actionLower.includes('north') || actionLower.includes('up')) {
+        if (playerPosition.y > 0) {
+            playerPosition.y--;
+            return "You move north through the arena.";
+        }
+        return "You can't go further north - you've reached the arena boundary.";
+    }
+    
+    if (actionLower.includes('south') || actionLower.includes('down')) {
+        if (playerPosition.y < 7) {
+            playerPosition.y++;
+            return "You move south through the arena.";
+        }
+        return "You can't go further south - you've reached the arena boundary.";
+    }
+    
+    if (actionLower.includes('west') || actionLower.includes('left')) {
+        if (playerPosition.x > 0) {
+            playerPosition.x--;
+            return "You move west through the arena.";
+        }
+        return "You can't go further west - you've reached the arena boundary.";
+    }
+    
+    if (actionLower.includes('east') || actionLower.includes('right')) {
+        if (playerPosition.x < 7) {
+            playerPosition.x++;
+            return "You move east through the arena.";
+        }
+        return "You can't go further east - you've reached the arena boundary.";
+    }
+    
+    // Special movement commands
+    if (actionLower.includes('explore') || actionLower.includes('search')) {
+        // Random movement in a direction
+        const directions = ['north', 'south', 'east', 'west'];
+        const direction = directions[Math.floor(Math.random() * directions.length)];
+        return handleMovement(direction);
+    }
+    
+    return null; // Not a movement command
+}
+
 // Update character stats display
 function updateCharacterStats() {
     if (!story || !story.variablesState) return;
@@ -781,6 +861,9 @@ function updateCharacterStats() {
     const playerWeapon = story.variablesState["player_weapon"] || story.variablesState["weapon"] || "-";
     const playerInventory = story.variablesState["player_inventory"] || story.variablesState["inventory"] || "-";
     const playerHealth = story.variablesState["player_health"] || story.variablesState["health"] || 100;
+    const playerStrength = story.variablesState["player_strength"] || 0;
+    const playerStealth = story.variablesState["player_stealth"] || 0;
+    const playerKnowledge = story.variablesState["player_knowledge"] || 0;
     const daysSurvived = story.variablesState["days_survived"] || 0;
     const tributesRemaining = story.variablesState["tributes_remaining"] || 24;
     
@@ -790,6 +873,9 @@ function updateCharacterStats() {
     document.getElementById('charAge').textContent = playerAge;
     document.getElementById('charWeapon').textContent = playerWeapon;
     document.getElementById('charInventory').textContent = playerInventory;
+    document.getElementById('charStrength').textContent = playerStrength;
+    document.getElementById('charStealth').textContent = playerStealth;
+    document.getElementById('charKnowledge').textContent = playerKnowledge;
     
     // Update health bar with animation
     const healthBar = document.getElementById('health');
@@ -814,6 +900,9 @@ function updateCharacterStats() {
     charData.trainingScore = story.variablesState["training_score"] || 0;
     charData.sponsorPoints = story.variablesState["sponsor_points"] || 0;
     
+    // Update mini-map
+    updateMiniMap();
+    
     // Add arena info if available
     if (daysSurvived > 0 || tributesRemaining < 24) {
         const arenaInfo = document.createElement('div');
@@ -833,6 +922,200 @@ function updateCharacterStats() {
         
         arenaInfo.className = 'arena-info';
         document.querySelector('.character-stats').appendChild(arenaInfo);
+    }
+}
+
+// Mini-map functionality
+let playerPosition = { x: 4, y: 4 };
+let enemies = [];
+let supplies = [];
+let waterSources = [];
+
+function updateMiniMap() {
+    const mapGrid = document.getElementById('mapGrid');
+    if (!mapGrid) return;
+    
+    // Clear existing map
+    mapGrid.innerHTML = '';
+    
+    // Generate 8x8 grid
+    for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 8; x++) {
+            const cell = document.createElement('div');
+            cell.className = 'map-cell';
+            
+            // Check what's at this position
+            if (x === playerPosition.x && y === playerPosition.y) {
+                cell.classList.add('player');
+            } else if (enemies.some(enemy => enemy.x === x && enemy.y === y)) {
+                cell.classList.add('enemy');
+            } else if (supplies.some(supply => supply.x === x && supply.y === y)) {
+                cell.classList.add('supply');
+            } else if (waterSources.some(water => water.x === x && water.y === y)) {
+                cell.classList.add('water');
+            }
+            
+            mapGrid.appendChild(cell);
+        }
+    }
+}
+
+// Initialize arena with enemies and resources
+function initializeArena() {
+    // Clear existing entities
+    enemies = [];
+    supplies = [];
+    waterSources = [];
+    
+    // Add enemies (other tributes)
+    const numEnemies = Math.min(8, Math.floor(Math.random() * 6) + 3);
+    for (let i = 0; i < numEnemies; i++) {
+        let x, y;
+        do {
+            x = Math.floor(Math.random() * 8);
+            y = Math.floor(Math.random() * 8);
+        } while (x === playerPosition.x && y === playerPosition.y);
+        
+        enemies.push({ x, y, health: 100, strength: Math.floor(Math.random() * 5) + 1 });
+    }
+    
+    // Add supplies
+    const numSupplies = Math.floor(Math.random() * 4) + 2;
+    for (let i = 0; i < numSupplies; i++) {
+        let x, y;
+        do {
+            x = Math.floor(Math.random() * 8);
+            y = Math.floor(Math.random() * 8);
+        } while ((x === playerPosition.x && y === playerPosition.y) || 
+                 enemies.some(enemy => enemy.x === x && enemy.y === y));
+        
+        supplies.push({ x, y, type: ['food', 'medicine', 'weapon'][Math.floor(Math.random() * 3)] });
+    }
+    
+    // Add water sources
+    const numWater = Math.floor(Math.random() * 3) + 1;
+    for (let i = 0; i < numWater; i++) {
+        let x, y;
+        do {
+            x = Math.floor(Math.random() * 8);
+            y = Math.floor(Math.random() * 8);
+        } while ((x === playerPosition.x && y === playerPosition.y) || 
+                 enemies.some(enemy => enemy.x === x && enemy.y === y) ||
+                 supplies.some(supply => supply.x === x && supply.y === y));
+        
+        waterSources.push({ x, y });
+    }
+    
+    updateMiniMap();
+}
+
+// Enemy AI - move enemies randomly
+function moveEnemies() {
+    enemies.forEach(enemy => {
+        if (Math.random() < 0.3) { // 30% chance to move
+            const directions = [
+                { dx: 0, dy: -1 }, // up
+                { dx: 0, dy: 1 },  // down
+                { dx: -1, dy: 0 }, // left
+                { dx: 1, dy: 0 }   // right
+            ];
+            
+            const direction = directions[Math.floor(Math.random() * directions.length)];
+            const newX = Math.max(0, Math.min(7, enemy.x + direction.dx));
+            const newY = Math.max(0, Math.min(7, enemy.y + direction.dy));
+            
+            // Don't move if position is occupied
+            if (!enemies.some(e => e.x === newX && e.y === newY) &&
+                !supplies.some(s => s.x === newX && s.y === newY) &&
+                !waterSources.some(w => w.x === newX && w.y === newY)) {
+                enemy.x = newX;
+                enemy.y = newY;
+            }
+        }
+    });
+    
+    updateMiniMap();
+}
+
+// Check for encounters
+function checkEncounters() {
+    // Check if player is near enemies
+    const nearbyEnemies = enemies.filter(enemy => 
+        Math.abs(enemy.x - playerPosition.x) <= 1 && 
+        Math.abs(enemy.y - playerPosition.y) <= 1
+    );
+    
+    if (nearbyEnemies.length > 0) {
+        // Trigger combat or stealth check
+        const enemy = nearbyEnemies[0];
+        const playerStealth = story.variablesState["player_stealth"] || 0;
+        
+        if (playerStealth > 3 && Math.random() < 0.7) {
+            // Successfully hide
+            return "You spot an enemy nearby and successfully hide in the shadows.";
+        } else {
+            // Combat initiated
+            return initiateCombat(enemy);
+        }
+    }
+    
+    // Check if player found supplies
+    const nearbySupplies = supplies.filter(supply => 
+        supply.x === playerPosition.x && supply.y === playerPosition.y
+    );
+    
+    if (nearbySupplies.length > 0) {
+        const supply = nearbySupplies[0];
+        supplies = supplies.filter(s => s !== supply);
+        updateMiniMap();
+        
+        switch (supply.type) {
+            case 'food':
+                story.variablesState["player_health"] = Math.min(100, (story.variablesState["player_health"] || 100) + 20);
+                return "You found food! Your health increases.";
+            case 'medicine':
+                story.variablesState["player_health"] = Math.min(100, (story.variablesState["player_health"] || 100) + 30);
+                return "You found medicine! Your health increases significantly.";
+            case 'weapon':
+                story.variablesState["player_strength"] = (story.variablesState["player_strength"] || 0) + 2;
+                return "You found a weapon! Your strength increases.";
+        }
+    }
+    
+    // Check if player found water
+    const nearbyWater = waterSources.filter(water => 
+        water.x === playerPosition.x && water.y === playerPosition.y
+    );
+    
+    if (nearbyWater.length > 0) {
+        story.variablesState["player_health"] = Math.min(100, (story.variablesState["player_health"] || 100) + 10);
+        return "You found water! Your health increases slightly.";
+    }
+    
+    return null;
+}
+
+// Combat system
+function initiateCombat(enemy) {
+    const playerStrength = story.variablesState["player_strength"] || 0;
+    const playerHealth = story.variablesState["player_health"] || 100;
+    
+    // Simple combat calculation
+    const playerPower = playerStrength + Math.random() * 5;
+    const enemyPower = enemy.strength + Math.random() * 5;
+    
+    if (playerPower > enemyPower) {
+        // Player wins
+        enemies = enemies.filter(e => e !== enemy);
+        story.variablesState["player_strength"] = playerStrength + 1;
+        story.variablesState["tributes_remaining"] = Math.max(1, (story.variablesState["tributes_remaining"] || 24) - 1);
+        updateMiniMap();
+        return `You defeat the enemy tribute! Your strength increases. ${story.variablesState["tributes_remaining"]} tributes remain.`;
+    } else {
+        // Player loses
+        const damage = Math.floor(Math.random() * 20) + 10;
+        story.variablesState["player_health"] = Math.max(0, playerHealth - damage);
+        return `You lose the fight and take ${damage} damage! Your health is now ${story.variablesState["player_health"]}.`;
     }
 }
 

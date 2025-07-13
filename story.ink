@@ -213,6 +213,7 @@ You are now inside the arena. The Games have begun.
 -> free_roam
 
 === free_roam ===
+# free_roam
 {check_death()}
 {check_win()}
 
