@@ -306,7 +306,11 @@ You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes rem
     - else:
         -> calculate_generic_outcome
 }
--> free_roam
+
+What would you like to do?
+
+* Continue your journey
+    -> free_roam
 
 === function check_death ===
 {player_dead:
