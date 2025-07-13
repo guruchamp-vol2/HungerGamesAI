@@ -12,6 +12,7 @@ VAR player_inventory = ""
 VAR player_age = 0
 VAR player_district = ""
 VAR player_name = ""
+VAR gpt_response = ""
 
 
 

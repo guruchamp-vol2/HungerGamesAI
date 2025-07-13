@@ -315,12 +315,16 @@ app.get('/api/stats', authenticateToken, async (req, res) => {
 // GPT-powered free roam endpoint
 app.post('/api/free-roam', async (req, res) => {
     try {
+        console.log('[Server Debug] Free roam request received');
+        console.log('[Server Debug] Request body:', req.body);
+        
         const { action, playerStats, storyContext } = req.body;
         
         console.log(`Free roam action: ${action}`);
         console.log(`Player stats:`, playerStats);
         
         if (!openai) {
+            console.log('[Server Debug] OpenAI not configured, using fallback responses');
             // Enhanced fallback responses when OpenAI is not configured
             const actionLower = action.toLowerCase();
             
@@ -385,7 +389,7 @@ app.post('/api/free-roam', async (req, res) => {
             ];
             
             const randomResponse = enhancedFallbackResponses[Math.floor(Math.random() * enhancedFallbackResponses.length)];
-            console.log('Using enhanced fallback response (no OpenAI)');
+            console.log('[Server Debug] Using enhanced fallback response (no OpenAI):', randomResponse);
             return res.json({ response: randomResponse });
         }
         

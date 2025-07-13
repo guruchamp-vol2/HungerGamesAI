@@ -816,6 +816,11 @@ async function handleFreeRoamAction(action) {
         // Send action to server for GPT processing
         console.log('[Debug] Sending action to server:', action);
         console.log('[Debug] Player stats:', charData);
+        console.log('[Debug] Request body:', JSON.stringify({
+            action: action,
+            playerStats: charData,
+            storyContext: storyContext
+        }));
         
         const response = await fetch('/api/free-roam', {
             method: 'POST',
@@ -830,9 +835,11 @@ async function handleFreeRoamAction(action) {
         });
         
         console.log('[Debug] Server response status:', response.status);
+        console.log('[Debug] Server response headers:', response.headers);
 
         if (response.ok) {
             const data = await response.json();
+            console.log('[Debug] Server response data:', data);
             
             // Display the AI response
             const aiResponseText = document.createElement('p');
@@ -849,7 +856,16 @@ async function handleFreeRoamAction(action) {
             updateCharacterStats();
             
         } else {
-            const errorData = await response.json();
+            console.log('[Debug] Response not OK, trying to parse error...');
+            let errorData;
+            try {
+                errorData = await response.json();
+                console.log('[Debug] Error data parsed:', errorData);
+            } catch (parseError) {
+                console.log('[Debug] Could not parse error response as JSON');
+                errorData = { error: 'Unknown server error' };
+            }
+            
             console.error('Server error:', errorData);
             
             // Display error response if available
@@ -861,7 +877,7 @@ async function handleFreeRoamAction(action) {
                 errorResponseText.textContent = errorData.response;
                 storyContainer.appendChild(errorResponseText);
             } else {
-                throw new Error('Failed to get AI response');
+                throw new Error(`Server error: ${errorData.error || 'Unknown error'}`);
             }
         }
         
