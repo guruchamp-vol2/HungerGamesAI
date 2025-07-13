@@ -1921,3 +1921,24 @@ function displayLeaderboardPreview(leaderboard) {
     
     preview.innerHTML = previewHTML;
 }
+
+// Initialize the game when the page loads
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('DOM loaded, initializing game...');
+    
+    // Check authentication first
+    await checkAuthentication();
+    
+    // Load the story
+    await loadStory();
+    
+    // Set up event listeners
+    setupEventListeners();
+    
+    // Load initial data
+    loadUserSaves();
+    loadFeedbackList();
+    loadLeaderboardPreview();
+    
+    console.log('Game initialization complete');
+});
