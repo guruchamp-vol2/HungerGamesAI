@@ -279,34 +279,6 @@ You are now inside the arena. The Games have begun.
 
 You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes remain.
 
-{action_input != "":
-    - "water" or "river" or "stream" or "lake":
-        -> calculate_water_outcome
-    - "run" or "sprint" or "dash":
-        ~ movement_type = "run"
-        -> calculate_movement_outcome
-    - "jump" or "leap" or "climb":
-        ~ movement_type = "jump"
-        -> calculate_movement_outcome
-    - "walk" or "move" or "go":
-        ~ movement_type = "walk"
-        -> calculate_movement_outcome
-    - "rest" or "sleep" or "sit":
-        -> calculate_rest_outcome
-    - "build" or "make" or "create":
-        -> calculate_build_outcome
-    - "search" or "look" or "explore":
-        -> calculate_search_outcome
-    - "hide" or "sneak" or "stealth":
-        -> calculate_stealth_outcome
-    - "attack" or "fight" or "kill":
-        -> calculate_combat_outcome
-    - "eat" or "food" or "drink":
-        -> calculate_food_outcome
-    - else:
-        -> calculate_generic_outcome
-}
-
 The arena stretches before you. You can move freely and take actions to survive.
 
 * Enter free roam mode
