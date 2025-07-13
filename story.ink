@@ -1,4 +1,4 @@
-EXTERNAL get_name()
+-> intro
 
 VAR player_dead = false
 VAR days_survived = 0
@@ -11,18 +11,20 @@ VAR player_weapon = ""
 VAR player_inventory = ""
 VAR player_age = 0
 VAR player_district = ""
+VAR player_name = ""
 
-=== function get_name ===
-~ return "Anonymous"
+
 
 === intro ===
 Welcome to Panem. The Capitol watches. The Districts remember.
 
 Before we begin, let's get to know you.
 
-Hello {get_name()}!
+What is your name?
 
--> ask_age
+* Enter your name
+    ~ player_name = "Unknown Player"
+    -> ask_age
 
 === ask_age ===
 How old are you?
