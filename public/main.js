@@ -673,10 +673,29 @@ function displayChoices() {
                 // Special handling for "Continue your journey" choice
                 if (choice.text.includes("Continue your journey")) {
                     console.log("[Debug] Continue your journey detected - forcing free roam mode");
+                    
+                    // Clear any existing choices
+                    const choicesContainer = document.getElementById('choices');
+                    choicesContainer.innerHTML = '';
+                    
+                    // Show free roam mode
                     showFreeRoamMode();
+                    
+                    // Initialize arena if needed
                     if (enemies.length === 0) {
                         initializeArena();
                     }
+                    
+                    // Add a message to indicate free roam mode is active
+                    const storyContainer = document.getElementById('storyContainer');
+                    const freeRoamText = document.createElement('p');
+                    freeRoamText.className = 'fade-in';
+                    freeRoamText.style.color = '#6bcf7f';
+                    freeRoamText.textContent = "You are now in free roam mode. Type your actions in the input box below.";
+                    storyContainer.appendChild(freeRoamText);
+                    storyContainer.scrollTop = storyContainer.scrollHeight;
+                    
+                    console.log("[Debug] Free roam mode activated successfully");
                     return;
                 }
                 
@@ -795,6 +814,9 @@ async function handleFreeRoamAction(action) {
         const storyContext = "You are in the Hunger Games arena. The Games have begun and you must survive. Other tributes are hunting you, and you need to find food, water, and shelter while avoiding danger.";
 
         // Send action to server for GPT processing
+        console.log('[Debug] Sending action to server:', action);
+        console.log('[Debug] Player stats:', charData);
+        
         const response = await fetch('/api/free-roam', {
             method: 'POST',
             headers: {
@@ -806,6 +828,8 @@ async function handleFreeRoamAction(action) {
                 storyContext: storyContext
             })
         });
+        
+        console.log('[Debug] Server response status:', response.status);
 
         if (response.ok) {
             const data = await response.json();
@@ -843,6 +867,8 @@ async function handleFreeRoamAction(action) {
         
     } catch (error) {
         console.error('Error processing action:', error);
+        console.error('Error details:', error.message);
+        console.error('Error stack:', error.stack);
         
         // Fallback response
         const fallbackText = document.createElement('p');
