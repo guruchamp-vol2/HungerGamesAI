@@ -628,62 +628,27 @@ function displayChoices() {
     if (story && story.currentChoices && story.currentChoices.length > 0) {
         currentChoices = story.currentChoices;
 
-        const nameChoice = story.currentChoices.find(c => c.text.includes('Enter your name'));
+        story.currentChoices.forEach((choice, index) => {
+            const choiceElement = document.createElement('div');
+            choiceElement.className = 'choice fade-in';
+            choiceElement.textContent = choice.text;
+            choiceElement.addEventListener('click', () => {
+                choiceElement.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    choiceElement.style.transform = '';
+                }, 150);
 
-        if (nameChoice) {
-            const nameForm = document.createElement('div');
-            nameForm.className = 'name-input-form fade-in';
-            nameForm.innerHTML = `
-                <input type="text" id="nameInput" placeholder="Enter your name..." autocomplete="off" style="width: 70%; padding: 10px; border-radius: 5px 0 0 5px; border: 1px solid #555; background: #333; color: #fff;">
-                <button id="nameSubmitBtn" style="padding: 10px; border-radius: 0 5px 5px 0; border: 1px solid #555; background: #444; color: #fff; cursor: pointer;">Continue</button>
-            `;
-            choicesContainer.appendChild(nameForm);
-
-            const nameInput = document.getElementById('nameInput');
-            const nameSubmitBtn = document.getElementById('nameSubmitBtn');
-
-            nameInput.focus();
-
-            const submitName = () => {
-                const name = nameInput.value.trim();
-                if (story && story.variablesState) {
-                    story.variablesState["name"] = name || "Tribute";
+                console.log(`[Debug] Choice clicked: '${choice.text}' at index: ${index}`);
+                
+                if (story) {
+                    story.ChooseChoiceIndex(index);
                 }
-                // Always use index 0 for the name input choice
-                story.ChooseChoiceIndex(0);
+
+                console.log("[Debug] Choice selected. Continuing story...");
                 continueStory();
-            };
-
-            nameSubmitBtn.addEventListener('click', submitName);
-            nameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    submitName();
-                }
             });
-
-        } else {
-            story.currentChoices.forEach((choice, index) => {
-                const choiceElement = document.createElement('div');
-                choiceElement.className = 'choice fade-in';
-                choiceElement.textContent = choice.text;
-                choiceElement.addEventListener('click', () => {
-                    choiceElement.style.transform = 'scale(0.95)';
-                    setTimeout(() => {
-                        choiceElement.style.transform = '';
-                    }, 150);
-
-                    console.log(`[Debug] Choice clicked: '${choice.text}' at index: ${index}`);
-                    
-                    if (story) {
-                        story.ChooseChoiceIndex(index);
-                    }
-
-                    console.log("[Debug] Choice selected. Continuing story...");
-                    continueStory();
-                });
-                choicesContainer.appendChild(choiceElement);
-            });
-        }
+            choicesContainer.appendChild(choiceElement);
+        });
     } else if (story && !story.canContinue) {
         // Story is waiting for input or has ended
         showFreeRoamMode();
