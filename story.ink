@@ -64,6 +64,13 @@ VAR risk_factor = 0
 VAR success_chance = 0
 VAR outcome_quality = 0
 VAR action_lower = ""
+VAR sponsor_points = 0
+VAR name = ""
+VAR district = ""
+VAR age = 0
+VAR health = 100
+VAR weapon = ""
+VAR inventory = ""
 
 
 === intro ===
