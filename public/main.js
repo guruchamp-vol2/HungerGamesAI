@@ -596,17 +596,17 @@ function continueStory() {
     // Continue until choices are available or story ends
     while (story && story.canContinue && (!story.currentChoices || story.currentChoices.length === 0)) {
         const storyText = story.Continue();
-        
+
         // Display each piece of story text as a separate paragraph
-        if (storyText && storyText.trim()) {
-            const newText = document.createElement('p');
-            newText.className = 'fade-in';
-            newText.textContent = storyText.trim();
-            storyContainer.appendChild(newText);
+    if (storyText && storyText.trim()) {
+        const newText = document.createElement('p');
+        newText.className = 'fade-in';
+        newText.textContent = storyText.trim();
+        storyContainer.appendChild(newText);
             
             // Smooth scroll to the new text
             setTimeout(() => {
-                storyContainer.scrollTop = storyContainer.scrollHeight;
+        storyContainer.scrollTop = storyContainer.scrollHeight;
             }, 50);
         }
     }
