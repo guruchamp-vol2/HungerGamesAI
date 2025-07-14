@@ -636,6 +636,8 @@ function continueStory() {
         }
         return; // Don't display choices in free roam mode
     }
+    // Not in free roam, hide input
+    setFreeRoamMode(false);
 
     // Display choices if available
     displayChoices();
@@ -707,19 +709,13 @@ function displayChoices() {
                !story.currentTags?.includes('free_roam') && 
                !(story.state && story.state.currentPath && story.state.currentPath.toString().includes('free_roam'))) {
         // Story is waiting for input or has ended (but not in free roam mode)
-        showFreeRoamMode();
+        setFreeRoamMode(true);
     }
 }
 
 // Show free roam mode
 function showFreeRoamMode() {
-    const inputSection = document.querySelector('.input-section');
-    inputSection.style.display = 'block';
-    
-    // Focus on input
-    setTimeout(() => {
-        document.getElementById('cmdInput').focus();
-    }, 100);
+    setFreeRoamMode(true);
 }
 
 // Handle free roam actions
@@ -1943,6 +1939,19 @@ function displayLeaderboardPreview(leaderboard) {
     });
     
     preview.innerHTML = previewHTML;
+}
+
+// Helper to show/hide free roam input
+function setFreeRoamMode(isActive) {
+    const inputSection = document.querySelector('.input-section');
+    if (isActive) {
+        inputSection.style.display = 'block';
+        setTimeout(() => {
+            document.getElementById('cmdInput').focus();
+        }, 100);
+    } else {
+        inputSection.style.display = 'none';
+    }
 }
 
 // Initialize the game when the page loads
