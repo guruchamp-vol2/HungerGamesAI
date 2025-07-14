@@ -671,36 +671,6 @@ function displayChoices() {
                 }
 
                 console.log("[Debug] Choice selected. Continuing story...");
-                
-                // Special handling for "Continue your journey" choice
-                if (choice.text.includes("Continue your journey")) {
-                    console.log("[Debug] Continue your journey detected - forcing free roam mode");
-                    
-                    // Clear any existing choices
-                    const choicesContainer = document.getElementById('choices');
-                    choicesContainer.innerHTML = '';
-                    
-                    // Show free roam mode
-                    showFreeRoamMode();
-                    
-                    // Initialize arena if needed
-                    if (enemies.length === 0) {
-                        initializeArena();
-                    }
-                    
-                    // Add a message to indicate free roam mode is active
-                    const storyContainer = document.getElementById('storyContainer');
-                    const freeRoamText = document.createElement('p');
-                    freeRoamText.className = 'fade-in';
-                    freeRoamText.style.color = '#6bcf7f';
-                    freeRoamText.textContent = "You are now in free roam mode. Type your actions in the input box below.";
-                    storyContainer.appendChild(freeRoamText);
-                    storyContainer.scrollTop = storyContainer.scrollHeight;
-                    
-                    console.log("[Debug] Free roam mode activated successfully");
-                    return;
-                }
-                
                 continueStory();
             });
             choicesContainer.appendChild(choiceElement);

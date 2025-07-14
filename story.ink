@@ -367,9 +367,6 @@ The arena stretches before you. You can move freely and take actions to survive.
 
 You are in free roam mode. Type your actions in the input box below.
 
-* Continue your journey
-    -> free_roam_loop
-
 === function check_death ===
 {player_dead:
     ~ return "You are dead. The Games are over for you."
