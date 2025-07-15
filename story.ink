@@ -286,6 +286,8 @@ The arena stretches before you. You can move freely and take actions to survive.
 
 === free_roam_loop ===
 # free_roam
+~ temp noop = 0
+[DEBUG: Entered free_roam_loop]
 {check_death()}
 {check_win()}
 
@@ -364,7 +366,6 @@ The arena stretches before you. You can move freely and take actions to survive.
     - else:
         -> calculate_generic_outcome
 }
-~ temp noop = 0
 You are in free roam mode. Type your actions in the input box below.
 -> free_roam_loop
 
