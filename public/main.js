@@ -672,6 +672,21 @@ function displayChoices() {
 
                 console.log("[Debug] Choice selected. Continuing story...");
                 continueStory();
+
+                // Fallback: if path is undefined, try to unstick
+                setTimeout(() => {
+                    if (!story.state || !story.state.currentPath) {
+                        if (freeRoamUnstickTries < 3) {
+                            freeRoamUnstickTries++;
+                            console.log(`[Debug] Path still undefined after choice, retrying continueStory() (${freeRoamUnstickTries})`);
+                            continueStory();
+                        } else {
+                            console.log('[Debug] Gave up trying to unstick free roam mode.');
+                        }
+                    } else {
+                        freeRoamUnstickTries = 0;
+                    }
+                }, 100);
             });
             choicesContainer.appendChild(choiceElement);
         });
@@ -1051,6 +1066,7 @@ let playerPosition = { x: 4, y: 4 };
 let enemies = [];
 let supplies = [];
 let waterSources = [];
+let freeRoamUnstickTries = 0;
 
 function updateMiniMap() {
     const mapGrid = document.getElementById('mapGrid');
