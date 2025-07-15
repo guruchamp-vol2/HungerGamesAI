@@ -1,6 +1,7 @@
 EXTERNAL bridge_prompt ()
 VAR action = ""
 VAR action_input = ""
+-> intro
 VAR player_dead = false
 VAR days_survived = 0
 VAR tributes_remaining = 24
