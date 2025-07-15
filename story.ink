@@ -270,7 +270,7 @@ The horn sounds.
     ~ player_stealth += 1
     -> arena_intro
 
-=== arena_intro ===
+ === arena_intro ===
 You are now inside the arena. The Games have begun.
 
 -> free_roam
@@ -279,16 +279,14 @@ You are now inside the arena. The Games have begun.
 You pause for a moment, considering your next move.
 
 ~ action_input = bridge_prompt()
--> free_roam_loop
 
-
-
-You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes remain.
-
-The arena stretches before you. You can move freely and take actions to survive.
-
-* Enter free roam mode
+{ action_input == "":
+    You wait, unsure what to do next.
+    -> free_roam
+- else:
     -> free_roam_loop
+}
+
 
 === free_roam_loop ===
 # free_roam
