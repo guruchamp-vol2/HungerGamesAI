@@ -334,6 +334,15 @@ async function loadStory() {
         
         try {
             story = new inkjs.Story(storyContent);
+            // Bind bridge_prompt external function so Ink can get player input
+story.BindExternalFunction("bridge_prompt", function() {
+    // Get last action from input box
+    const cmdInput = document.getElementById('cmdInput');
+    const action = cmdInput ? cmdInput.value.trim() : "";
+    console.log("[Debug] bridge_prompt returning action:", action);
+    return action || "wait";
+});
+
             console.log('Ink story created successfully');
             
         } catch (inkError) {
@@ -784,9 +793,6 @@ async function handleFreeRoamAction(action) {
         
         // Process action through Ink story
         console.log('[Debug] Processing action through Ink story:', action);
-        
-        // Set the action input in the story
-        story.variablesState["action_input"] = action;
         
         // Continue the story to process the action
         story.Continue();
