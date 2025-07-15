@@ -1919,8 +1919,10 @@ function setFreeRoamMode(isActive) {
         setTimeout(() => {
             document.getElementById('cmdInput').focus();
         }, 100);
+        console.log('[Debug] Free roam input box SHOWN');
     } else {
         inputSection.style.display = 'none';
+        console.log('[Debug] Free roam input box HIDDEN');
     }
 }
 
