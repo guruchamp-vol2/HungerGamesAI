@@ -1,5 +1,6 @@
--> intro
-
+EXTERNAL bridge_prompt ()
+VAR action = ""
+VAR action_input = ""
 VAR player_dead = false
 VAR days_survived = 0
 VAR tributes_remaining = 24
@@ -13,7 +14,8 @@ VAR player_age = 0
 VAR player_district = ""
 VAR player_name = ""
 VAR gpt_response = ""
-VAR action_input = ""
+
+
 
 // Enemy and threat tracking
 VAR nearby_enemies = 0
@@ -273,9 +275,11 @@ You are now inside the arena. The Games have begun.
 -> free_roam
 
 === free_roam ===
-# free_roam
-{check_death()}
-{check_win()}
+You pause for a moment, considering your next move.
+
+~ action = bridge_prompt()
+-> process_action
+
 
 You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes remain.
 
