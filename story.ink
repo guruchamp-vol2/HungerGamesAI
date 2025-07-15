@@ -364,7 +364,7 @@ The arena stretches before you. You can move freely and take actions to survive.
     - else:
         -> calculate_generic_outcome
 }
-
+~ temp noop = 0
 You are in free roam mode. Type your actions in the input box below.
 -> free_roam_loop
 
