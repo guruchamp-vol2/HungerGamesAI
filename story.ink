@@ -278,8 +278,9 @@ You are now inside the arena. The Games have begun.
 === free_roam ===
 You pause for a moment, considering your next move.
 
-~ action = bridge_prompt()
--> process_action
+~ action_input = bridge_prompt()
+-> free_roam_loop
+
 
 
 You are in the arena. Day {days_survived + 1}. {tributes_remaining} tributes remain.
