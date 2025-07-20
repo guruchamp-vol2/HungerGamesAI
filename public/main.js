@@ -697,34 +697,24 @@ function displayChoices() {
             choiceElement.className = 'choice fade-in';
             choiceElement.textContent = choice.text;
             choiceElement.addEventListener('click', () => {
-                choiceElement.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    choiceElement.style.transform = '';
-                }, 150);
-
-                console.log(`[Debug] Choice clicked: '${choice.text}' at index: ${index}`);
-                
                 if (story) {
                     story.ChooseChoiceIndex(index);
-                }
-
-                console.log("[Debug] Choice selected. Continuing story...");
-                continueStory();
-
-                // Fallback: if path is undefined, try to unstick
-                setTimeout(() => {
-                    if (!story.state || !story.state.currentPath) {
-                        if (story.canContinue && freeRoamUnstickTries < 3) {
-                            freeRoamUnstickTries++;
-                            console.log(`[Debug] Path still undefined after choice, retrying continueStory() (${freeRoamUnstickTries})`);
-                            continueStory();
-                        } else {
-                            console.log('[Debug] Gave up trying to unstick free roam mode.');
+                    // Loop to continue the story until choices or input are needed
+                    while (story.canContinue) {
+                        const storyText = story.Continue();
+                        if (storyText && storyText.trim()) {
+                            const newText = document.createElement('p');
+                            newText.className = 'fade-in';
+                            newText.textContent = storyText.trim();
+                            storyContainer.appendChild(newText);
+                            setTimeout(() => {
+                                storyContainer.scrollTop = storyContainer.scrollHeight;
+                            }, 50);
                         }
-                    } else {
-                        freeRoamUnstickTries = 0;
                     }
-                }, 100);
+                    // Now display choices or input as appropriate
+                    displayChoices();
+                }
             });
             choicesContainer.appendChild(choiceElement);
         });
