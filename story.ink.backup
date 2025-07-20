@@ -360,4 +360,5 @@ You wait and observe your surroundings. You're getting better at surviving in th
 ~ player_energy += 3
 ~ action_result = "You observed your surroundings carefully."
 
--> free_roam 
+-> free_roam
+
