@@ -203,7 +203,7 @@ What do you do?
     -> free_roam
 
 === free_roam ===
-You are now in the arena. The Games have truly begun.
+You are in free roam mode. What do you do next?
 
 {player_personality == "aggressive":
     Your aggressive nature makes you want to take action. You feel the urge to hunt down other tributes.
