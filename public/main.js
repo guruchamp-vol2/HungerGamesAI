@@ -587,121 +587,153 @@ function createFallbackStory() {
     }
 }
 
-// Set up event listeners
+// Deep debug: log every major function call and DOM state
+function deepDebugLog(msg, ...args) {
+    console.log('[DEEP DEBUG]', msg, ...args);
+}
+
+// Patch setupEventListeners to log event attachment
 function setupEventListeners() {
+    deepDebugLog('setupEventListeners called');
     const cmdInput = document.getElementById('cmdInput');
     const hintBtn = document.getElementById('hintBtn');
     const saveForm = document.getElementById('saveForm');
     const feedbackForm = document.getElementById('feedbackForm');
-    
+    if (!cmdInput) deepDebugLog('cmdInput not found in DOM!');
+    if (!hintBtn) deepDebugLog('hintBtn not found in DOM!');
+    if (!saveForm) deepDebugLog('saveForm not found in DOM!');
+    if (!feedbackForm) deepDebugLog('feedbackForm not found in DOM!');
     // Handle Enter key in input
-    cmdInput.addEventListener('keypress', (e) => {
+    cmdInput?.addEventListener('keypress', (e) => {
+        deepDebugLog('cmdInput keypress', e.key);
         if (e.key === 'Enter') {
             const action = cmdInput.value.trim();
+            deepDebugLog('cmdInput Enter pressed, action:', action);
             if (action) {
                 handleFreeRoamAction(action);
                 cmdInput.value = '';
             }
         }
     });
-    
     // Handle hint button
-    hintBtn.addEventListener('click', () => {
+    hintBtn?.addEventListener('click', () => {
+        deepDebugLog('hintBtn clicked');
         showHint();
     });
-    
     // Handle save form
-    saveForm.addEventListener('submit', (e) => {
+    saveForm?.addEventListener('submit', (e) => {
+        deepDebugLog('saveForm submitted');
         e.preventDefault();
         saveGame();
     });
-    
     // Handle feedback form
-    feedbackForm.addEventListener('submit', (e) => {
+    feedbackForm?.addEventListener('submit', (e) => {
+        deepDebugLog('feedbackForm submitted');
         e.preventDefault();
         submitFeedback();
     });
 }
 
-// Continue the story
-function continueStory() {
-    const storyContainer = document.getElementById('storyContainer');
+// Patch setFreeRoamMode to log DOM state
+function setFreeRoamMode(isActive) {
+    deepDebugLog('setFreeRoamMode called', isActive);
+    const inputSection = document.querySelector('.input-section');
+    const choicesContainer = document.getElementById('choices');
+    if (!inputSection) {
+        deepDebugLog('[Error] .input-section not found in DOM!');
+        return;
+    }
+    if (!choicesContainer) {
+        deepDebugLog('[Error] #choices not found in DOM!');
+    }
+    if (isActive) {
+        inputSection.style.display = 'block';
+        if (choicesContainer) choicesContainer.style.display = 'none';
+        setTimeout(() => {
+            const cmdInput = document.getElementById('cmdInput');
+            if (cmdInput) {
+                cmdInput.focus();
+                deepDebugLog('cmdInput focused after free roam transition');
+            } else {
+                deepDebugLog('cmdInput not found after free roam transition');
+            }
+            deepDebugLog('inputSection display:', inputSection.style.display);
+        }, 100);
+        deepDebugLog('[Debug] Free roam input box SHOWN');
+    } else {
+        inputSection.style.display = 'none';
+        if (choicesContainer) choicesContainer.style.display = 'block';
+        deepDebugLog('[Debug] Free roam input box HIDDEN');
+    }
+}
 
+// Patch continueStory to log transitions
+function continueStory() {
+    deepDebugLog('continueStory called');
+    const storyContainer = document.getElementById('storyContainer');
     // Continue until choices are available or story ends
     while (story && story.canContinue && (!story.currentChoices || story.currentChoices.length === 0)) {
         const storyText = story.Continue();
-
+        deepDebugLog('continueStory: storyText', storyText);
         // Display each piece of story text as a separate paragraph
-    if (storyText && storyText.trim()) {
-        const newText = document.createElement('p');
-        newText.className = 'fade-in';
-        newText.textContent = storyText.trim();
-        storyContainer.appendChild(newText);
-            
+        if (storyText && storyText.trim()) {
+            const newText = document.createElement('p');
+            newText.className = 'fade-in';
+            newText.textContent = storyText.trim();
+            storyContainer.appendChild(newText);
             // Smooth scroll to the new text
             setTimeout(() => {
-        storyContainer.scrollTop = storyContainer.scrollHeight;
+                storyContainer.scrollTop = storyContainer.scrollHeight;
             }, 50);
         }
     }
-
     // Check if we're in free roam mode
-    console.log("[Debug] Checking free roam mode...");
-    console.log("[Debug] Current tags:", story?.currentTags);
-    console.log("[Debug] Current path:", story?.state?.currentPath?.toString());
-    
+    deepDebugLog('[Debug] Checking free roam mode...', story?.currentTags, story?.state?.currentPath?.toString());
     if (story && story.currentTags && story.currentTags.includes('free_roam')) {
-        console.log("[Debug] Free roam detected via tags");
-        // Set a default action so bridge_prompt never gets empty
+        deepDebugLog('[Debug] Free roam detected via tags');
         if (story && story.variablesState) {
             story.variablesState["current_action"] = "wait";
         }
-        // We're in free roam mode, show input and initialize arena
         showFreeRoamMode();
         if (enemies.length === 0) {
             initializeArena();
         }
-        return; // Don't display choices in free roam mode
+        deepDebugLog('continueStory: entered free roam via tags');
+        return;
     }
-    
-    // Alternative check for free roam mode by looking at current knot name
     if (story && story.state && story.state.currentPath && story.state.currentPath.toString().includes('free_roam')) {
-        console.log("[Debug] Free roam detected via path");
-        // We're in free roam mode, show input and initialize arena
+        deepDebugLog('[Debug] Free roam detected via path');
         showFreeRoamMode();
         if (enemies.length === 0) {
             initializeArena();
         }
-        return; // Don't display choices in free roam mode
+        deepDebugLog('continueStory: entered free roam via path');
+        return;
     }
-    // Not in free roam, hide input
     setFreeRoamMode(false);
-
-    // Display choices if available
     displayChoices();
-
-    // Update character stats
     updateCharacterStats();
 }
 
-// Display choices
+// Patch displayChoices to log choices
 function displayChoices() {
+    deepDebugLog('displayChoices called');
     const choicesContainer = document.getElementById('choices');
     choicesContainer.innerHTML = '';
-
     if (story && story.currentChoices && story.currentChoices.length > 0) {
         currentChoices = story.currentChoices;
-
+        deepDebugLog('displayChoices: currentChoices', currentChoices);
         story.currentChoices.forEach((choice, index) => {
             const choiceElement = document.createElement('div');
             choiceElement.className = 'choice fade-in';
             choiceElement.textContent = choice.text;
             choiceElement.addEventListener('click', () => {
+                deepDebugLog('choice clicked', index, choice.text);
                 if (story) {
                     story.ChooseChoiceIndex(index);
-                    // Loop to continue the story until choices or input are needed
                     while (story.canContinue) {
                         const storyText = story.Continue();
+                        deepDebugLog('choice click: storyText', storyText);
                         if (storyText && storyText.trim()) {
                             const newText = document.createElement('p');
                             newText.className = 'fade-in';
@@ -712,7 +744,6 @@ function displayChoices() {
                             }, 50);
                         }
                     }
-                    // Now display choices or input as appropriate
                     displayChoices();
                 }
             });
@@ -721,7 +752,7 @@ function displayChoices() {
     } else if (story && !story.canContinue && 
                !story.currentTags?.includes('free_roam') && 
                !(story.state && story.state.currentPath && story.state.currentPath.toString().includes('free_roam'))) {
-        // Story is waiting for input or has ended (but not in free roam mode)
+        deepDebugLog('displayChoices: no choices, not in free roam, showing input');
         setFreeRoamMode(true);
     }
 }
@@ -1963,27 +1994,34 @@ function displayLeaderboardPreview(leaderboard) {
 
 // Helper to show/hide free roam input
 function setFreeRoamMode(isActive) {
+    deepDebugLog('setFreeRoamMode called', isActive);
     const inputSection = document.querySelector('.input-section');
     const choicesContainer = document.getElementById('choices');
     if (!inputSection) {
-        console.error('[Error] .input-section not found in DOM!');
+        deepDebugLog('[Error] .input-section not found in DOM!');
         return;
     }
     if (!choicesContainer) {
-        console.error('[Error] #choices not found in DOM!');
+        deepDebugLog('[Error] #choices not found in DOM!');
     }
     if (isActive) {
         inputSection.style.display = 'block';
         if (choicesContainer) choicesContainer.style.display = 'none';
         setTimeout(() => {
             const cmdInput = document.getElementById('cmdInput');
-            if (cmdInput) cmdInput.focus();
+            if (cmdInput) {
+                cmdInput.focus();
+                deepDebugLog('cmdInput focused after free roam transition');
+            } else {
+                deepDebugLog('cmdInput not found after free roam transition');
+            }
+            deepDebugLog('inputSection display:', inputSection.style.display);
         }, 100);
-        console.log('[Debug] Free roam input box SHOWN');
+        deepDebugLog('[Debug] Free roam input box SHOWN');
     } else {
         inputSection.style.display = 'none';
         if (choicesContainer) choicesContainer.style.display = 'block';
-        console.log('[Debug] Free roam input box HIDDEN');
+        deepDebugLog('[Debug] Free roam input box HIDDEN');
     }
 }
 
