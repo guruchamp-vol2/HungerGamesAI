@@ -203,6 +203,7 @@ What do you do?
     -> free_roam
 
 === free_roam ===
+#free_roam
 You are in free roam mode. What do you do next?
 
 {player_personality == "aggressive":
