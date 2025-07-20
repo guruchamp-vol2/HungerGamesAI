@@ -1964,14 +1964,25 @@ function displayLeaderboardPreview(leaderboard) {
 // Helper to show/hide free roam input
 function setFreeRoamMode(isActive) {
     const inputSection = document.querySelector('.input-section');
+    const choicesContainer = document.getElementById('choices');
+    if (!inputSection) {
+        console.error('[Error] .input-section not found in DOM!');
+        return;
+    }
+    if (!choicesContainer) {
+        console.error('[Error] #choices not found in DOM!');
+    }
     if (isActive) {
         inputSection.style.display = 'block';
+        if (choicesContainer) choicesContainer.style.display = 'none';
         setTimeout(() => {
-            document.getElementById('cmdInput').focus();
+            const cmdInput = document.getElementById('cmdInput');
+            if (cmdInput) cmdInput.focus();
         }, 100);
         console.log('[Debug] Free roam input box SHOWN');
     } else {
         inputSection.style.display = 'none';
+        if (choicesContainer) choicesContainer.style.display = 'block';
         console.log('[Debug] Free roam input box HIDDEN');
     }
 }
