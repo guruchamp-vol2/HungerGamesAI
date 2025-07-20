@@ -714,7 +714,7 @@ function displayChoices() {
                 // Fallback: if path is undefined, try to unstick
                 setTimeout(() => {
                     if (!story.state || !story.state.currentPath) {
-                        if (freeRoamUnstickTries < 3) {
+                        if (story.canContinue && freeRoamUnstickTries < 3) {
                             freeRoamUnstickTries++;
                             console.log(`[Debug] Path still undefined after choice, retrying continueStory() (${freeRoamUnstickTries})`);
                             continueStory();
