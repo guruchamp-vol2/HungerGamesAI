@@ -652,6 +652,10 @@ function continueStory() {
     
     if (story && story.currentTags && story.currentTags.includes('free_roam')) {
         console.log("[Debug] Free roam detected via tags");
+        // Set a default action so bridge_prompt never gets empty
+        if (story && story.variablesState) {
+            story.variablesState["current_action"] = "wait";
+        }
         // We're in free roam mode, show input and initialize arena
         showFreeRoamMode();
         if (enemies.length === 0) {
