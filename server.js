@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const path = require('path');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const { initializeDatabase, userDB, saveDB, feedbackDB, statsDB, leaderboardDB } = require('./database');
@@ -74,6 +75,56 @@ if (process.env.OPENAI_API_KEY) {
     console.log('OpenAI API configured successfully');
 } else {
     console.log('OpenAI API key not found - free roam AI features will be disabled');
+}
+
+// Email configuration
+let emailTransporter = null;
+if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    emailTransporter = nodemailer.createTransporter({
+        host: process.env.EMAIL_HOST,
+        port: process.env.EMAIL_PORT || 587,
+        secure: process.env.EMAIL_SECURE === 'true',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    });
+    console.log('Email notifications configured successfully');
+} else {
+    console.log('Email configuration not found - feedback notifications will be disabled');
+}
+
+// Email notification function
+async function sendFeedbackNotification(feedback) {
+    if (!emailTransporter || !process.env.ADMIN_EMAIL) {
+        console.log('Email notification skipped - email not configured or admin email not set');
+        return;
+    }
+
+    try {
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: process.env.ADMIN_EMAIL,
+            subject: `New Feedback: ${feedback.subject}`,
+            html: `
+                <h2>New Feedback Received</h2>
+                <p><strong>From:</strong> ${feedback.username || 'Anonymous'}</p>
+                <p><strong>Subject:</strong> ${feedback.subject}</p>
+                <p><strong>Rating:</strong> ${feedback.rating ? feedback.rating + '/5' : 'Not provided'}</p>
+                <p><strong>Message:</strong></p>
+                <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                    ${feedback.message.replace(/\n/g, '<br>')}
+                </div>
+                <p><strong>Submitted:</strong> ${new Date(feedback.created_at).toLocaleString()}</p>
+                <p><strong>User ID:</strong> ${feedback.user_id || 'Anonymous'}</p>
+            `
+        };
+
+        await emailTransporter.sendMail(mailOptions);
+        console.log(`Feedback notification sent to ${process.env.ADMIN_EMAIL}`);
+    } catch (error) {
+        console.error('Failed to send feedback notification:', error);
+    }
 }
 
 // Authentication routes
@@ -268,6 +319,10 @@ app.post('/api/feedback', async (req, res) => {
         }
 
         const feedback = await feedbackDB.submitFeedback(userId, username, subject, message, rating);
+        
+        // Send email notification
+        await sendFeedbackNotification(feedback);
+        
         res.json({ message: 'Feedback submitted successfully', feedback });
     } catch (error) {
         console.error('Submit feedback error:', error);

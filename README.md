@@ -55,9 +55,43 @@ A true free-roam interactive story game set in the Hunger Games universe, powere
 ## Setup
 
 1. Install dependencies: `npm install`
-2. Set your OpenAI API key: `export OPENAI_API_KEY="your-key-here"`
+2. Create a `.env` file with your configuration:
+   ```
+   # JWT Secret (change this in production)
+   JWT_SECRET=your-secret-key-change-in-production
+   
+   # OpenAI API Key (optional - for AI features)
+   OPENAI_API_KEY=your-openai-api-key-here
+   
+   # Email Configuration (for feedback notifications)
+   EMAIL_HOST=smtp.gmail.com
+   EMAIL_PORT=587
+   EMAIL_SECURE=false
+   EMAIL_USER=your-email@gmail.com
+   EMAIL_PASS=your-app-password
+   
+   # Admin Email (where feedback notifications will be sent)
+   ADMIN_EMAIL=admin@yourdomain.com
+   ```
 3. Run the server: `node server.js`
 4. Open `http://localhost:3000` in your browser
+
+### Email Setup for Feedback Notifications
+
+To receive email notifications when feedback is submitted:
+
+1. **Gmail Setup** (recommended):
+   - Enable 2-factor authentication on your Gmail account
+   - Generate an App Password: Google Account → Security → App Passwords
+   - Use the App Password as `EMAIL_PASS`
+
+2. **Other Email Providers**:
+   - Update `EMAIL_HOST` to your provider's SMTP server
+   - Update `EMAIL_PORT` and `EMAIL_SECURE` as needed
+   - Use your email credentials
+
+3. **Admin Email**:
+   - Set `ADMIN_EMAIL` to the email where you want to receive notifications
 
 ## Tips
 

@@ -24,6 +24,7 @@
     "express": "^4.19.2",
     "inkjs": "^2.3.2",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.5",
     "openai": "^4.52.7",
     "sqlite3": "^5.1.7"
   },
