@@ -334,14 +334,7 @@ async function loadStory() {
         
         try {
             story = new inkjs.Story(storyContent);
-            // Bind bridge_prompt external function so Ink can get player input
-story.BindExternalFunction("bridge_prompt", function() {
-    // Get last action from input box
-    const cmdInput = document.getElementById('cmdInput');
-    const action = cmdInput ? cmdInput.value.trim() : "";
-    console.log("[Debug] bridge_prompt returning action:", action);
-    return action || "wait";
-});
+            // Note: bridge_prompt function removed - using fallback responses instead
 
             console.log('Ink story created successfully');
             
