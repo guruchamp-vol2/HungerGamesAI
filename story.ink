@@ -1,6 +1,5 @@
-EXTERNAL bridge_prompt ()
-VAR action = ""
-VAR action_input = ""
+action = ""
+action_input = ""
 -> intro
 VAR player_dead = false
 VAR days_survived = 0
@@ -257,7 +256,6 @@ You stand on the tribute platform. 60 seconds until start.
     You stepped off early and triggered a land-mine. You are dead.
     ~ player_dead = true
     -> END
-
 === cornucopia_choice ===
 The horn sounds.
 
@@ -278,7 +276,21 @@ You are now inside the arena. The Games have begun.
 === free_roam ===
 You pause for a moment, considering your next move.
 
-~ action_input = bridge_prompt()
+~ action_input = ""
+
+{ action_input == "":
+    You wait, unsure what to do next.
+    -> free_roam
+- else:
+    -> free_roam_loop
+}
+
+
+
+=== free_roam ===
+You pause for a moment, considering your next move.
+
+~ action_input = ""
 
 { action_input == "":
     You wait, unsure what to do next.
@@ -370,6 +382,7 @@ You pause for a moment, considering your next move.
     - else:
         -> calculate_generic_outcome
 }
+
 You are in free roam mode. Type your actions in the input box below.
 -> free_roam_loop
 
@@ -866,3 +879,4 @@ You are in free roam mode. Type your actions in the input box below.
     ~ player_morale += 2
 }
 -> free_roam_loop
+
