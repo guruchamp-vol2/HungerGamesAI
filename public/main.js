@@ -340,25 +340,16 @@ async function loadStory() {
                 // First try to get action from story variables (set by handleFreeRoamAction)
                 if (story && story.variablesState && story.variablesState["current_action"]) {
                     const action = story.variablesState["current_action"];
-                    console.log("[Debug] bridge_prompt returning action from story variables:", action);
-                    return action;
+                    if (action && action.trim()) {
+                        return action;
+                    }
                 }
-                
                 // Fallback to input box
                 const cmdInput = document.getElementById('cmdInput');
                 const action = cmdInput ? cmdInput.value.trim() : "";
-                console.log("[Debug] bridge_prompt returning action from input box:", action);
-                
-                // If action is empty, return a default action based on context
-                if (!action || action === "") {
-                    // Check if we're in free roam mode and return a sensible default
-                    if (window.freeRoamMode) {
-                        return "wait";
-                    }
-                    return "wait";
-                }
-                
-                return action;
+                if (action) return action;
+                // If action is empty, always return a safe default
+                return "wait";
             });
 
             console.log('Ink story created successfully');
