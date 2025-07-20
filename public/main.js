@@ -337,11 +337,28 @@ async function loadStory() {
             
             // Bind bridge_prompt external function with fallback
             story.BindExternalFunction("bridge_prompt", function() {
-                // Get last action from input box or return default
+                // First try to get action from story variables (set by handleFreeRoamAction)
+                if (story && story.variablesState && story.variablesState["current_action"]) {
+                    const action = story.variablesState["current_action"];
+                    console.log("[Debug] bridge_prompt returning action from story variables:", action);
+                    return action;
+                }
+                
+                // Fallback to input box
                 const cmdInput = document.getElementById('cmdInput');
                 const action = cmdInput ? cmdInput.value.trim() : "";
-                console.log("[Debug] bridge_prompt returning action:", action);
-                return action || "wait";
+                console.log("[Debug] bridge_prompt returning action from input box:", action);
+                
+                // If action is empty, return a default action based on context
+                if (!action || action === "") {
+                    // Check if we're in free roam mode and return a sensible default
+                    if (window.freeRoamMode) {
+                        return "wait";
+                    }
+                    return "wait";
+                }
+                
+                return action;
             });
 
             console.log('Ink story created successfully');
@@ -381,7 +398,23 @@ async function loadStory() {
                 "gpt_response": "",
                 "sponsor_points": 0,
                 "training_score": 0,
-                "instawin": false
+                "instawin": false,
+                "player_personality": "neutral",
+                "world_event": "none",
+                "current_action": "",
+                "aggressive_actions": 0,
+                "cautious_actions": 0,
+                "survival_actions": 0,
+                "strategic_actions": 0,
+                "player_health": 100,
+                "player_energy": 100,
+                "player_strength": 0,
+                "player_stealth": 0,
+                "player_knowledge": 0,
+                "player_agility": 0,
+                "tributes_remaining": 24,
+                "days_survived": 0,
+                "player_dead": false
             };
             
             // Set default values for all variables
@@ -792,8 +825,17 @@ async function handleFreeRoamAction(action) {
             return;
         }
         
+        // Update personality and world events before processing action
+        updatePersonality(action);
+        updateWorldEvents();
+        
         // Process action through Ink story
         console.log('[Debug] Processing action through Ink story:', action);
+        
+        // Set the action in the story variables for the bridge_prompt to access
+        if (story && story.variablesState) {
+            story.variablesState["current_action"] = action;
+        }
         
         // Continue the story to process the action
         story.Continue();
@@ -1969,3 +2011,58 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     console.log('Game initialization complete');
 });
+
+// Update world events dynamically
+function updateWorldEvents() {
+    if (!story || !story.variablesState) return;
+    
+    const events = [
+        "storm_approaching",
+        "cannon_fire", 
+        "supply_drop",
+        "quiet_period"
+    ];
+    
+    // Randomly trigger world events
+    if (Math.random() < 0.2) { // 20% chance per action
+        const randomEvent = events[Math.floor(Math.random() * events.length)];
+        story.variablesState["world_event"] = randomEvent;
+        console.log(`[Debug] World event triggered: ${randomEvent}`);
+    } else {
+        story.variablesState["world_event"] = "none";
+    }
+}
+
+// Update character personality based on actions
+function updatePersonality(action) {
+    if (!story || !story.variablesState) return;
+    
+    const actionLower = action.toLowerCase();
+    let personality = story.variablesState["player_personality"] || "neutral";
+    
+    // Track personality development based on actions
+    if (actionLower.includes('attack') || actionLower.includes('fight') || actionLower.includes('hunt')) {
+        if (personality === "neutral") personality = "aggressive";
+        else if (personality === "cautious") personality = "neutral";
+        story.variablesState["aggressive_actions"] = (story.variablesState["aggressive_actions"] || 0) + 1;
+    }
+    
+    if (actionLower.includes('hide') || actionLower.includes('sneak') || actionLower.includes('wait')) {
+        if (personality === "neutral") personality = "cautious";
+        else if (personality === "aggressive") personality = "neutral";
+        story.variablesState["cautious_actions"] = (story.variablesState["cautious_actions"] || 0) + 1;
+    }
+    
+    if (actionLower.includes('search') || actionLower.includes('find') || actionLower.includes('gather')) {
+        if (personality === "neutral") personality = "survivalist";
+        story.variablesState["survival_actions"] = (story.variablesState["survival_actions"] || 0) + 1;
+    }
+    
+    if (actionLower.includes('observe') || actionLower.includes('plan') || actionLower.includes('strategize')) {
+        if (personality === "neutral") personality = "strategic";
+        story.variablesState["strategic_actions"] = (story.variablesState["strategic_actions"] || 0) + 1;
+    }
+    
+    story.variablesState["player_personality"] = personality;
+    console.log(`[Debug] Personality updated to: ${personality}`);
+}

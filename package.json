@@ -1,34 +1,31 @@
 {
   "name": "hunger-games-ai",
   "version": "1.0.0",
-  "description": "An interactive Hunger Games story powered by AI.",
+  "description": "Dynamic AI-powered Hunger Games interactive fiction",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon server.js",
+    "build": "echo 'No build step required'",
+    "test": "echo 'No tests specified'"
   },
-  "keywords": [
-    "hunger-games",
-    "ai",
-    "interactive-story",
-    "ink",
-    "gpt"
-  ],
+  "keywords": ["interactive-fiction", "ink", "hunger-games", "ai", "game"],
   "author": "Your Name",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
     "bcryptjs": "^2.4.3",
-    "body-parser": "^1.20.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "inkjs": "^2.3.2",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^7.0.5",
-    "openai": "^4.52.7",
-    "sqlite3": "^5.1.7"
+    "nodemailer": "^6.9.4",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "compression": "^1.7.4"
   },
   "devDependencies": {
-    "inklecate": "^1.2.0"
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
