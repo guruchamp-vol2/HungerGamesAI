@@ -667,14 +667,27 @@ function setFreeRoamMode(isActive) {
     }
 }
 
-// Patch continueStory to log transitions
+// Fixed continueStory to handle free roam mode - prevents infinite loop
 function continueStory() {
     deepDebugLog('continueStory called');
     const storyContainer = document.getElementById('storyContainer');
+    
+    // Track iterations to prevent infinite loop
+    let iterations = 0;
+    const maxIterations = 100;
+    
     // Continue until choices are available or story ends
     while (story && story.canContinue && (!story.currentChoices || story.currentChoices.length === 0)) {
+        // Safety check to prevent infinite loop
+        iterations++;
+        if (iterations > maxIterations) {
+            deepDebugLog('[Error] continueStory hit max iterations, stopping loop');
+            break;
+        }
+        
         const storyText = story.Continue();
         deepDebugLog('continueStory: storyText', storyText);
+        
         // Display each piece of story text as a separate paragraph
         if (storyText && storyText.trim()) {
             const newText = document.createElement('p');
@@ -685,6 +698,36 @@ function continueStory() {
             setTimeout(() => {
                 storyContainer.scrollTop = storyContainer.scrollHeight;
             }, 50);
+        }
+        
+        // Check if we're in free roam mode - if so, STOP the loop and show input
+        // This prevents the infinite loop caused by bridge_prompt calling continuously
+        if (story && story.currentTags && story.currentTags.includes('free_roam')) {
+            deepDebugLog('[Debug] Free roam detected - stopping loop to wait for user input');
+            if (story && story.variablesState) {
+                story.variablesState["action_input"] = "";
+                story.variablesState["current_action"] = "";
+            }
+            showFreeRoamMode();
+            if (enemies.length === 0) {
+                initializeArena();
+            }
+            return; // EXIT - don't continue loop, wait for user input
+        }
+        
+        // Also check path for free_roam
+        if (story && story.state && story.state.currentPath && 
+            story.state.currentPath.toString().includes('free_roam')) {
+            deepDebugLog('[Debug] Free roam detected via path - stopping loop');
+            if (story && story.variablesState) {
+                story.variablesState["action_input"] = "";
+                story.variablesState["current_action"] = "";
+            }
+            showFreeRoamMode();
+            if (enemies.length === 0) {
+                initializeArena();
+            }
+            return; // EXIT - don't continue loop, wait for user input
         }
     }
     // Check if we're in free roam mode
