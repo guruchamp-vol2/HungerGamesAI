@@ -758,10 +758,11 @@ function continueStory() {
     updateCharacterStats();
 }
 
-// Patch displayChoices to log choices
+// Fixed displayChoices to handle free roam mode - prevents infinite loop when clicking choices
 function displayChoices() {
     deepDebugLog('displayChoices called');
     const choicesContainer = document.getElementById('choices');
+    const storyContainer = document.getElementById('storyContainer');
     choicesContainer.innerHTML = '';
     if (story && story.currentChoices && story.currentChoices.length > 0) {
         currentChoices = story.currentChoices;
@@ -774,9 +775,53 @@ function displayChoices() {
                 deepDebugLog('choice clicked', index, choice.text);
                 if (story) {
                     story.ChooseChoiceIndex(index);
+                    
+                    // Track iterations to prevent infinite loop (same fix as continueStory)
+                    let iterations = 0;
+                    const maxIterations = 100;
+                    
                     while (story.canContinue) {
+                        // Safety check to prevent infinite loop
+                        iterations++;
+                        if (iterations > maxIterations) {
+                            deepDebugLog('[Error] displayChoices choice click hit max iterations, stopping loop');
+                            break;
+                        }
+                        
                         const storyText = story.Continue();
                         deepDebugLog('choice click: storyText', storyText);
+                        
+                        // Check if we're in free roam mode - if so, STOP the loop
+                        if (story && story.currentTags && story.currentTags.includes('free_roam')) {
+                            deepDebugLog('[Debug] Free roam detected in choice click - stopping loop');
+                            if (story && story.variablesState) {
+                                story.variablesState["action_input"] = "";
+                                story.variablesState["current_action"] = "";
+                            }
+                            showFreeRoamMode();
+                            if (enemies.length === 0) {
+                                initializeArena();
+                            }
+                            deepDebugLog('displayChoices: entered free roam via tags from choice click, exiting loop');
+                            return; // EXIT - don't continue loop, wait for user input
+                        }
+                        
+                        // Also check path for free_roam
+                        if (story && story.state && story.state.currentPath && 
+                            story.state.currentPath.toString().includes('free_roam')) {
+                            deepDebugLog('[Debug] Free roam detected via path in choice click - stopping loop');
+                            if (story && story.variablesState) {
+                                story.variablesState["action_input"] = "";
+                                story.variablesState["current_action"] = "";
+                            }
+                            showFreeRoamMode();
+                            if (enemies.length === 0) {
+                                initializeArena();
+                            }
+                            deepDebugLog('displayChoices: entered free roam via path from choice click, exiting loop');
+                            return; // EXIT - don't continue loop, wait for user input
+                        }
+                        
                         if (storyText && storyText.trim()) {
                             const newText = document.createElement('p');
                             newText.className = 'fade-in';
