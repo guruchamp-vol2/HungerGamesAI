@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hunger Games - Authentication</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -239,7 +238,15 @@
         font-size: 2rem;
       }
     }
-  </style>
+  body{background:radial-gradient(ellipse at top,#284532,#0b1511 65%);color:#edf1df;font-family:system-ui,sans-serif}
+.auth-container{background:#15251e;border-color:#34493a;box-shadow:0 24px 80px #0005}
+.auth-title{color:#ddba70;font-family:Georgia,serif}
+.form-input{background:#0c1b13;border-color:#34493a;color:#edf1df}
+.form-input:focus{border-color:#ddba70;box-shadow:0 0 0 3px #ddba7022}
+.auth-btn{background:#ddba70;color:#1b2216}.auth-btn:hover{background:#eacc90}
+:focus-visible{outline:3px solid #ddba70;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
 </head>
 <body>
   <div class="auth-container">
@@ -255,12 +262,12 @@
       
       <div class="form-group">
         <label class="form-label" for="loginUsername">Username</label>
-        <input type="text" id="loginUsername" class="form-input" placeholder="Enter your username" required>
+        <input type="text" id="loginUsername" maxlength="32" autocomplete="username" class="form-input" placeholder="Enter your username" required>
       </div>
       
       <div class="form-group">
         <label class="form-label" for="loginPassword">Password</label>
-        <input type="password" id="loginPassword" class="form-input" placeholder="Enter your password" required>
+        <input type="password" id="loginPassword" maxlength="72" autocomplete="current-password" class="form-input" placeholder="Enter your password" required>
       </div>
       
       <button type="submit" class="auth-btn" id="loginBtn">Login</button>
@@ -278,7 +285,7 @@
       
       <div class="form-group">
         <label class="form-label" for="registerUsername">Username</label>
-        <input type="text" id="registerUsername" class="form-input" placeholder="Choose a username" required>
+        <input type="text" id="registerUsername" maxlength="32" autocomplete="username" class="form-input" placeholder="Choose a username" required>
       </div>
       
       <div class="form-group">
@@ -288,12 +295,12 @@
       
       <div class="form-group">
         <label class="form-label" for="registerPassword">Password</label>
-        <input type="password" id="registerPassword" class="form-input" placeholder="Choose a password (min 6 characters)" required>
+        <input type="password" id="registerPassword" maxlength="72" autocomplete="new-password" class="form-input" placeholder="Choose a password (min 6 characters)" required>
       </div>
       
       <div class="form-group">
         <label class="form-label" for="registerConfirmPassword">Confirm Password</label>
-        <input type="password" id="registerConfirmPassword" class="form-input" placeholder="Confirm your password" required>
+        <input type="password" id="registerConfirmPassword" maxlength="72" autocomplete="new-password" class="form-input" placeholder="Confirm your password" required>
       </div>
       
       <button type="submit" class="auth-btn" id="registerBtn">Register</button>

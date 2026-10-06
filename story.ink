@@ -1,3 +1,9 @@
+VAR action = ""
+VAR player_personality = "neutral"
+VAR world_event = "none"
+VAR player_agility = 0
+VAR player_energy = 100
+VAR sponsor_points = 0
 VAR player_dead = false
 VAR days_survived = 0
 VAR tributes_remaining = 24
@@ -12,6 +18,8 @@ VAR player_district = ""
 VAR player_name = ""
 VAR action_input = ""
 VAR action_result = ""
+
+-> intro
 
 === intro ===
 Welcome to Panem. The Capitol watches. The Districts remember.
@@ -203,6 +211,17 @@ What do you do?
     -> free_roam
 
 === free_roam ===
+~ player_health = MAX(0, MIN(100, player_health))
+~ player_energy = MAX(0, MIN(100, player_energy))
+{player_health <= 0:
+    ~ player_dead = true
+    You are dead. The Games are over for you.
+    -> END
+}
+{tributes_remaining <= 1:
+    Congratulations! You are the last tribute standing! You have won the Hunger Games!
+    -> END
+}
 #free_roam
 You are in free roam mode. What do you do next?
 
@@ -264,10 +283,12 @@ Choose your next action:
 
 === calculate_water_outcome ===
 {player_dead:
-    ~ return "You are dead. The Games are over for you."
+    You are dead. The Games are over for you.
+    -> END
 }
 {tributes_remaining <= 1:
-    ~ return "Congratulations! You are the last tribute standing! You have won the Hunger Games!"
+    Congratulations! You are the last tribute standing! You have won the Hunger Games!
+    -> END
 }
 
 // Calculate success chance based on multiple factors
@@ -332,7 +353,8 @@ Choose your next action:
 ~ success_chance += random_factor
 
 // Determine outcome based on calculated success chance
-{success_chance > 80:
+{
+- success_chance > 80:
     {player_knowledge > 6:
         You use your extensive knowledge to locate a natural spring that's been revealed by recent weather patterns. The water is crystal clear and pure, flowing from deep underground sources. You carefully collect it, knowing this is the best water you'll find in the arena.
         ~ player_health += 20
@@ -347,14 +369,12 @@ Choose your next action:
         You methodically search multiple locations, using your survival instincts to identify the best water source. You find a small stream with clear, flowing water and carefully filter it through your clothing.
         ~ player_health += 16
         ~ action_result = "Your survival instincts led you to a reliable water source."
-    }
-    else:
+    - else:
         You search thoroughly and find a small stream with clear, flowing water. The water looks safe and you drink your fill, feeling much better.
         ~ player_health += 15
         ~ action_result = "You found a good source of clean water."
     }
-}
-{success_chance > 60:
+- success_chance > 60:
     {player_knowledge > 4:
         You remember that running water is usually safer than still water. You find a stream and carefully filter it through your clothing before drinking, removing debris and potential contaminants.
         ~ player_health += 12
@@ -364,31 +384,26 @@ Choose your next action:
         The approaching storm has revealed new water sources. You find a small pool of rainwater that's relatively clean and safe to drink.
         ~ player_health += 10
         ~ action_result = "The storm revealed a clean water source."
-    }
-    else:
+    - else:
         You search for water and find a small stream. The water looks reasonably safe, though you're careful about how much you drink.
         ~ player_health += 10
         ~ action_result = "You found water and feel refreshed."
     }
-}
-{success_chance > 40:
+- success_chance > 40:
     You search for water and find a small pool. The water is murky but flowing, which reduces the risk of contamination. You drink cautiously, hoping it won't make you sick.
     ~ player_health += 7
     ~ action_result = "You found water, though it's not ideal."
-}
-{success_chance > 20:
+- success_chance > 20:
     You search for water but only find a stagnant pool. The water looks questionable, but you're desperate. You take small sips, hoping for the best.
     ~ player_health += 3
     ~ temp sickness_chance = RANDOM(1, 100)
     {sickness_chance > 70:
         ~ player_health -= 5
         ~ action_result = "You found water, but it made you feel sick."
-    }
-    else:
+    - else:
         ~ action_result = "You found water, though it's poor quality."
     }
-}
-else:
+- else:
     You search for water but find nothing. The area is dry and barren. Your search was fruitless and cost you energy.
     ~ player_energy -= 5
     ~ action_result = "You searched but found no water."
@@ -406,10 +421,12 @@ else:
 
 === calculate_movement_outcome ===
 {player_dead:
-    ~ return "You are dead. The Games are over for you."
+    You are dead. The Games are over for you.
+    -> END
 }
 {tributes_remaining <= 1:
-    ~ return "Congratulations! You are the last tribute standing! You have won the Hunger Games!"
+    Congratulations! You are the last tribute standing! You have won the Hunger Games!
+    -> END
 }
 
 // Calculate movement success and efficiency based on multiple factors
@@ -481,7 +498,8 @@ else:
 ~ movement_success += random_factor
 
 // Determine outcome based on calculated success
-{movement_success > 90:
+{
+- movement_success > 90:
     {player_agility > 6:
         Your exceptional agility allows you to move with incredible grace and speed through the arena. You navigate obstacles effortlessly, finding the most efficient paths. Your movements are so fluid that you cover more ground than other tributes could ever hope to achieve.
         ~ player_energy += 15
@@ -498,14 +516,12 @@ else:
         You move with purpose toward the supply drop, your speed and determination putting you ahead of other tributes. You might just reach the supplies first.
         ~ player_energy += 10
         ~ action_result = "You moved quickly toward the supply drop."
-    }
-    else:
+    - else:
         You move with remarkable efficiency through the arena. Your movements are smooth and purposeful, conserving energy while making excellent progress. You feel confident in your ability to navigate this dangerous environment.
         ~ player_energy += 10
         ~ action_result = "You moved with remarkable efficiency."
     }
-}
-{movement_success > 70:
+- movement_success > 70:
     {player_agility > 4:
         You move with grace and speed through the arena. Your agility makes movement feel natural and effortless, allowing you to cover good ground without exhausting yourself.
         ~ player_energy += 8
@@ -527,24 +543,20 @@ else:
         You move quickly to find shelter before the storm hits. The approaching weather adds urgency to your movement, but you manage to find a good path.
         ~ player_energy += 6
         ~ action_result = "You moved quickly to find shelter from the storm."
-    }
-    else:
+    - else:
         You move carefully through the arena, staying alert for danger. Your movement is steady and controlled, conserving energy while making good progress.
         ~ player_energy += 5
         ~ action_result = "You moved safely through the arena."
     }
-}
-{movement_success > 50:
+- movement_success > 50:
     You move through the arena with reasonable care. The terrain is challenging, but you make steady progress. You stay alert for danger while conserving your energy.
     ~ player_energy += 3
     ~ action_result = "You moved through the arena with care."
-}
-{movement_success > 30:
+- movement_success > 30:
     You struggle to move efficiently through the arena. The terrain is difficult, and you find yourself getting tired quickly. You make some progress, but it's harder than expected.
     ~ player_energy -= 2
     ~ action_result = "You struggled to move through difficult terrain."
-}
-else:
+- else:
     Your movement is hampered by poor conditions. Whether it's difficult terrain, exhaustion, or poor visibility, you make little progress and expend more energy than you should.
     ~ player_energy -= 5
     ~ action_result = "Your movement was hampered by poor conditions."
@@ -586,10 +598,12 @@ else:
 
 === calculate_rest_outcome ===
 {player_dead:
-    ~ return "You are dead. The Games are over for you."
+    You are dead. The Games are over for you.
+    -> END
 }
 {tributes_remaining <= 1:
-    ~ return "Congratulations! You are the last tribute standing! You have won the Hunger Games!"
+    Congratulations! You are the last tribute standing! You have won the Hunger Games!
+    -> END
 }
 
 // Calculate rest effectiveness based on multiple factors
@@ -668,7 +682,8 @@ else:
 ~ rest_quality += random_factor
 
 // Determine outcome based on calculated rest quality
-{rest_quality > 90:
+{
+- rest_quality > 90:
     {player_stealth > 6:
         You find an excellent hiding spot and rest in perfect safety. Your stealth skills allow you to remain completely undetected while you recover. The rest is so peaceful and restorative that you feel completely refreshed.
         ~ player_health += 20
@@ -689,15 +704,13 @@ else:
         ~ player_energy += 32
         ~ player_stealth += 1
         ~ action_result = "Your cautious approach ensured a perfect rest."
-    }
-    else:
+    - else:
         You find an excellent spot to rest and recover. The location is safe, comfortable, and allows you to fully relax. You feel completely restored and ready to continue.
         ~ player_health += 15
         ~ player_energy += 30
         ~ action_result = "You found an excellent rest spot and feel fully restored."
     }
-}
-{rest_quality > 70:
+- rest_quality > 70:
     {player_stealth > 3:
         You find a good hiding spot and rest relatively safely. Your stealth skills help you remain undetected, allowing for a peaceful rest that significantly restores your energy.
         ~ player_health += 12
@@ -716,27 +729,23 @@ else:
         ~ player_health += 11
         ~ player_energy += 24
         ~ action_result = "Your survival instincts led you to a good rest spot."
-    }
-    else:
+    - else:
         You rest in a well-hidden spot. The rest is peaceful and restorative. You feel your energy returning and your mind clearing. This was exactly what you needed.
         ~ player_health += 8
         ~ player_energy += 20
         ~ action_result = "You rested and feel much better."
     }
-}
-{rest_quality > 50:
+- rest_quality > 50:
     You find a reasonably safe place to rest. The location isn't perfect, but it's good enough to allow you to recover some energy and health.
     ~ player_health += 6
     ~ player_energy += 15
     ~ action_result = "You found a decent place to rest."
-}
-{rest_quality > 30:
+- rest_quality > 30:
     You rest in a less-than-ideal location. The spot is somewhat exposed, but you're tired enough to make do. You get some rest, though not as much as you'd hoped.
     ~ player_health += 3
     ~ player_energy += 10
     ~ action_result = "You rested in a less-than-ideal spot."
-}
-else:
+- else:
     You struggle to find a good place to rest. The area is exposed and dangerous, making it difficult to relax. You get minimal rest and remain on edge throughout.
     ~ player_health += 1
     ~ player_energy += 5
@@ -779,10 +788,12 @@ else:
 
 === calculate_build_outcome ===
 {player_dead:
-    ~ return "You are dead. The Games are over for you."
+    You are dead. The Games are over for you.
+    -> END
 }
 {tributes_remaining <= 1:
-    ~ return "Congratulations! You are the last tribute standing! You have won the Hunger Games!"
+    Congratulations! You are the last tribute standing! You have won the Hunger Games!
+    -> END
 }
 
 // Calculate building effectiveness based on multiple factors
@@ -859,7 +870,8 @@ else:
 ~ build_success += random_factor
 
 // Generate dynamic response based on calculated factors
-{build_success > 90:
+{
+- build_success > 90:
     {player_knowledge > 6:
         Your extensive knowledge of construction techniques allows you to build an exceptional shelter. You carefully select the best materials and use advanced building methods to create a structure that's both sturdy and well-hidden. The shelter provides excellent protection and comfort.
         ~ player_energy -= (energy_cost - 3)
@@ -874,14 +886,12 @@ else:
         Your survival instincts guide you to build the perfect shelter. You choose a location that's both safe and practical, using materials that provide maximum protection with minimal visibility. The shelter is expertly crafted for survival.
         ~ player_energy -= (energy_cost - 2)
         ~ action_result = "Your survival instincts led you to build the perfect shelter."
-    }
-    else:
+    - else:
         You build an excellent shelter using your skills and available materials. The structure is well-designed and provides good protection from the elements and other tributes. You feel much safer now.
         ~ player_energy -= (energy_cost - 2)
         ~ action_result = "You built an excellent shelter that provides good protection."
     }
-}
-{build_success > 70:
+- build_success > 70:
     {player_knowledge > 3:
         Your knowledge helps you build a good shelter. You choose appropriate materials and use effective construction techniques. The shelter provides decent protection and is reasonably well-hidden.
         ~ player_energy -= (energy_cost - 1)
@@ -891,24 +901,20 @@ else:
         You take your time building a shelter, ensuring it's well-hidden and defensible. Your careful approach results in a solid structure that provides good protection while remaining inconspicuous.
         ~ player_energy -= energy_cost
         ~ action_result = "Your cautious approach resulted in a well-hidden, solid shelter."
-    }
-    else:
+    - else:
         You build a decent shelter using available materials. The structure provides basic protection and is better than nothing. You feel somewhat safer with this shelter.
         ~ player_energy -= energy_cost
         ~ action_result = "You built a decent shelter that provides basic protection."
     }
-}
-{build_success > 50:
+- build_success > 50:
     You construct a basic shelter. It's not perfect, but it provides some cover and protection. The structure is functional, though you know it could be better with more time or better materials.
     ~ player_energy -= energy_cost
     ~ action_result = "You built a basic shelter that provides some protection."
-}
-{build_success > 30:
+- build_success > 30:
     You attempt to build a shelter, but the results are poor. The structure is flimsy and provides minimal protection. You're exhausted from the effort, and the shelter barely qualifies as such.
     ~ player_energy -= (energy_cost + 2)
     ~ action_result = "You built a poor shelter that provides minimal protection."
-}
-else:
+- else:
     Your attempt to build a shelter is a complete failure. You waste energy and materials on a structure that collapses almost immediately. You're left exhausted and without any meaningful shelter.
     ~ player_energy -= (energy_cost + 5)
     ~ action_result = "Your shelter building attempt was a complete failure."
@@ -958,10 +964,12 @@ else:
 
 === calculate_search_outcome ===
 {player_dead:
-    ~ return "You are dead. The Games are over for you."
+    You are dead. The Games are over for you.
+    -> END
 }
 {tributes_remaining <= 1:
-    ~ return "Congratulations! You are the last tribute standing! You have won the Hunger Games!"
+    Congratulations! You are the last tribute standing! You have won the Hunger Games!
+    -> END
 }
 
 // Calculate search effectiveness based on multiple factors
@@ -1044,7 +1052,8 @@ else:
 ~ search_success += random_factor
 
 // Generate dynamic response based on calculated factors
-{search_success > 95:
+{
+- search_success > 95:
     {player_knowledge > 6:
         Your extensive knowledge allows you to conduct a thorough and highly effective search. You recognize valuable items that others might miss and find resources in unexpected places. Your search yields exceptional results.
         ~ player_health += 12
@@ -1062,15 +1071,13 @@ else:
         ~ player_health += 11
         ~ player_energy -= (energy_cost - 2)
         ~ action_result = "Your survival instincts led you to find exactly what you needed."
-    }
-    else:
+    - else:
         You conduct an exceptionally thorough search of the area. Your methodical approach and attention to detail pay off with excellent results. You find valuable supplies and resources.
         ~ player_health += 10
         ~ player_energy -= (energy_cost - 2)
         ~ action_result = "You conducted an exceptionally thorough search with excellent results."
     }
-}
-{search_success > 75:
+- search_success > 75:
     {player_knowledge > 3:
         Your knowledge helps you search effectively. You recognize useful items and know where to look for them. Your search is productive and yields good results.
         ~ player_health += 8
@@ -1082,27 +1089,23 @@ else:
         ~ player_health += 7
         ~ player_energy -= energy_cost
         ~ action_result = "Your cautious, thorough search yielded good results."
-    }
-    else:
+    - else:
         You search thoroughly and find some useful items. There's a bit of food, some materials you can use, and other helpful supplies. Not a huge find, but definitely helpful.
         ~ player_health += 6
         ~ player_energy -= energy_cost
         ~ action_result = "You found some useful supplies through thorough searching."
     }
-}
-{search_success > 55:
+- search_success > 55:
     You search the area and find some items. The results are decent, though not exceptional. You gather what you can and feel somewhat better equipped.
     ~ player_health += 4
     ~ player_energy -= energy_cost
     ~ action_result = "You found some useful items through your search."
-}
-{search_success > 35:
+- search_success > 35:
     You search the area but find little of value. The search is somewhat disappointing, though you do find a few basic items that might be useful later.
     ~ player_health += 2
     ~ player_energy -= energy_cost
     ~ action_result = "Your search yielded few useful items."
-}
-else:
+- else:
     You search the area but find almost nothing of value. The search is largely fruitless and leaves you feeling frustrated and tired. You waste energy on a search that produces minimal results.
     ~ player_energy -= (energy_cost + 2)
     ~ action_result = "Your search was largely fruitless and wasted energy."
@@ -1174,10 +1177,12 @@ else:
 
 === calculate_stealth_outcome ===
 {player_dead:
-    ~ return "You are dead. The Games are over for you."
+    You are dead. The Games are over for you.
+    -> END
 }
 {tributes_remaining <= 1:
-    ~ return "Congratulations! You are the last tribute standing! You have won the Hunger Games!"
+    Congratulations! You are the last tribute standing! You have won the Hunger Games!
+    -> END
 }
 
 You sneak with expert precision. Your movements are silent and calculated. You manage to observe other tributes without being detected. Your stealth training is paying off.
@@ -1188,10 +1193,12 @@ You sneak with expert precision. Your movements are silent and calculated. You m
 
 === calculate_combat_outcome ===
 {player_dead:
-    ~ return "You are dead. The Games are over for you."
+    You are dead. The Games are over for you.
+    -> END
 }
 {tributes_remaining <= 1:
-    ~ return "Congratulations! You are the last tribute standing! You have won the Hunger Games!"
+    Congratulations! You are the last tribute standing! You have won the Hunger Games!
+    -> END
 }
 
 // Calculate combat effectiveness based on multiple factors
@@ -1279,7 +1286,8 @@ You sneak with expert precision. Your movements are silent and calculated. You m
 ~ combat_success += random_factor
 
 // Determine outcome based on calculated combat success
-{combat_success > 95:
+{
+- combat_success > 95:
     {player_strength > 7:
         Your exceptional strength and combat skills make you a formidable opponent. You practice advanced techniques with deadly precision, feeling completely confident in your ability to defend yourself. Your movements are fluid and powerful.
         ~ player_strength += 3
@@ -1297,15 +1305,13 @@ You sneak with expert precision. Your movements are silent and calculated. You m
         ~ player_strength += 3
         ~ player_health += 3
         ~ action_result = "Your aggressive combat training was intense and effective."
-    }
-    else:
+    - else:
         Your combat practice is exceptional. You feel completely in control of your abilities, confident that you can handle any threat that comes your way. Your skills have reached a new level.
         ~ player_strength += 2
         ~ player_health += 2
         ~ action_result = "Your combat practice was exceptional."
     }
-}
-{combat_success > 80:
+- combat_success > 80:
     {player_strength > 4:
         Your strength and combat skills are impressive. You practice with confidence, feeling powerful and capable. Your movements are strong and controlled, showing clear improvement in your fighting abilities.
         ~ player_strength += 2
@@ -1321,28 +1327,23 @@ You sneak with expert precision. Your movements are silent and calculated. You m
         ~ player_strength += 1
         ~ player_knowledge += 1
         ~ action_result = "Your strategic combat training was effective."
-    }
-    else:
+    - else:
         You practice your combat stance and feel more confident with your weapon. Your training is productive and you can see clear improvement in your fighting abilities.
         ~ player_strength += 2
         ~ action_result = "You practiced combat and feel more prepared."
     }
-}
-{combat_success > 60:
+- combat_success > 60:
     Your combat practice is decent. You work on your techniques and feel somewhat more prepared for potential conflicts. The training is helpful, though not exceptional.
     ~ player_strength += 1
     ~ action_result = "Your combat practice was decent."
-}
-{combat_success > 40:
+- combat_success > 40:
     You attempt to practice combat, but your technique is rusty. The training is somewhat helpful, but you know you need more work to be truly effective in a fight.
     ~ action_result = "Your combat practice was basic but helpful."
-}
-{combat_success > 20:
+- combat_success > 20:
     Your combat practice is poor. You struggle with the techniques and don't feel much more prepared than before. The training was largely ineffective.
     ~ player_energy -= 3
     ~ action_result = "Your combat practice was largely ineffective."
-}
-else:
+- else:
     Your attempt at combat training is a complete failure. You're exhausted and frustrated, and you feel less prepared than before you started. The training was counterproductive.
     ~ player_energy -= 5
     ~ player_health -= 2
@@ -1386,10 +1387,12 @@ else:
 
 === calculate_food_outcome ===
 {player_dead:
-    ~ return "You are dead. The Games are over for you."
+    You are dead. The Games are over for you.
+    -> END
 }
 {tributes_remaining <= 1:
-    ~ return "Congratulations! You are the last tribute standing! You have won the Hunger Games!"
+    Congratulations! You are the last tribute standing! You have won the Hunger Games!
+    -> END
 }
 
 // Calculate food finding effectiveness based on multiple factors
@@ -1473,7 +1476,8 @@ else:
 ~ food_success += random_factor
 
 // Generate dynamic response based on calculated factors
-{food_success > 90:
+{
+- food_success > 90:
     {player_knowledge > 6:
         Your extensive knowledge of edible plants and food sources allows you to find excellent, nutritious food. You identify safe, high-quality food items that provide substantial nourishment. Your knowledge ensures you avoid anything dangerous.
         ~ player_health += 15
@@ -1491,15 +1495,13 @@ else:
         ~ player_health += 13
         ~ player_energy -= (energy_cost - 1)
         ~ action_result = "Your survival instincts led you to excellent food sources."
-    }
-    else:
+    - else:
         You find excellent food sources and gather a substantial amount of nutritious food. The quality is high and you feel significantly better after eating. Your food gathering efforts are highly successful.
         ~ player_health += 12
         ~ player_energy -= (energy_cost - 1)
         ~ action_result = "You found excellent food sources and gathered substantial nourishment."
     }
-}
-{food_success > 70:
+- food_success > 70:
     {player_knowledge > 3:
         Your knowledge helps you identify safe and nutritious food. You find good quality food items and avoid anything potentially dangerous. Your search is productive and yields satisfying results.
         ~ player_health += 10
@@ -1511,27 +1513,23 @@ else:
         ~ player_health += 9
         ~ player_energy -= energy_cost
         ~ action_result = "Your cautious approach led to safe, good-quality food."
-    }
-    else:
+    - else:
         You find good food sources and gather a decent amount of food. The quality is acceptable and you feel better after eating. Your food gathering efforts are successful.
         ~ player_health += 8
         ~ player_energy -= energy_cost
         ~ action_result = "You found good food sources and gathered decent nourishment."
     }
-}
-{food_success > 50:
+- food_success > 50:
     You find some food and eat what you can. The quality is decent, though not exceptional. You feel somewhat better, though you could use more substantial nourishment.
     ~ player_health += 6
     ~ player_energy -= energy_cost
     ~ action_result = "You found some decent food and feel somewhat better."
-}
-{food_success > 30:
+- food_success > 30:
     You find little food, and what you do find is of poor quality. You eat what you can, but it's barely enough to take the edge off your hunger. The search was disappointing.
     ~ player_health += 3
     ~ player_energy -= energy_cost
     ~ action_result = "You found little food of poor quality."
-}
-else:
+- else:
     Your search for food is largely unsuccessful. You find almost nothing edible, and what little you do find is barely worth the effort. You waste energy on a fruitless search.
     ~ player_energy -= (energy_cost + 2)
     ~ action_result = "Your food search was largely unsuccessful."
@@ -1597,10 +1595,12 @@ else:
 
 === calculate_generic_outcome ===
 {player_dead:
-    ~ return "You are dead. The Games are over for you."
+    You are dead. The Games are over for you.
+    -> END
 }
 {tributes_remaining <= 1:
-    ~ return "Congratulations! You are the last tribute standing! You have won the Hunger Games!"
+    Congratulations! You are the last tribute standing! You have won the Hunger Games!
+    -> END
 }
 
 // Calculate observation effectiveness based on multiple factors
@@ -1692,7 +1692,8 @@ else:
 ~ observation_success += random_factor
 
 // Generate dynamic response based on calculated factors
-{observation_success > 90:
+{
+- observation_success > 90:
     {player_knowledge > 6:
         Your extensive knowledge allows you to observe the arena with exceptional insight. You notice patterns, identify potential threats and opportunities, and gather valuable information that others would miss. Your analytical mind processes every detail.
         ~ player_energy += 12
@@ -1710,14 +1711,12 @@ else:
         ~ player_energy += 11
         ~ player_stealth += 1
         ~ action_result = "Your cautious approach led to comprehensive observations."
-    }
-    else:
+    - else:
         You observe your surroundings with remarkable attention to detail. You notice patterns, identify potential threats and opportunities, and gather valuable information about the arena. Your observations are highly productive.
         ~ player_energy += 10
         ~ action_result = "You observed your surroundings with remarkable attention to detail."
     }
-}
-{observation_success > 70:
+- observation_success > 70:
     {player_knowledge > 3:
         Your knowledge helps you observe effectively. You notice important details and gather useful information about your surroundings. Your observations are productive and informative.
         ~ player_energy += 8
@@ -1729,24 +1728,20 @@ else:
         ~ player_energy += 7
         ~ player_knowledge += 1
         ~ action_result = "Your strategic observation yielded valuable insights."
-    }
-    else:
+    - else:
         You observe your surroundings carefully and gather useful information. You notice important details about the arena and feel more aware of your environment. Your observations are helpful.
         ~ player_energy += 6
         ~ action_result = "You observed your surroundings carefully and gathered useful information."
     }
-}
-{observation_success > 50:
+- observation_success > 50:
     You wait and observe your surroundings. You gather some useful information and feel more aware of your environment. The observation is helpful, though not exceptional.
     ~ player_energy += 4
     ~ action_result = "You observed your surroundings and gathered some useful information."
-}
-{observation_success > 30:
+- observation_success > 30:
     You attempt to observe your surroundings, but your attention wanders. You gather some basic information, though not as much as you'd hoped. The observation is somewhat helpful.
     ~ player_energy += 2
     ~ action_result = "You observed your surroundings with limited success."
-}
-else:
+- else:
     You try to observe your surroundings, but you're distracted and unfocused. You gather little useful information and waste time that could have been spent more productively.
     ~ player_energy -= 1
     ~ action_result = "Your observation was unfocused and unproductive."

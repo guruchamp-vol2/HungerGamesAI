@@ -30,7 +30,7 @@
 4. **Configure the service:**
    - **Name:** `hunger-games-ai` (or your preferred name)
    - **Environment:** `Node`
-   - **Build Command:** `npm install`
+   - **Build Command:** `npm ci && npm run build`
    - **Start Command:** `npm start`
    - **Plan:** Free (or paid if you prefer)
 
@@ -50,8 +50,6 @@
 1. **Your game will be available at:** `https://your-app-name.onrender.com`
 
 2. **Default login credentials:**
-   - Username: `Dev`
-   - Password: `IAmDev$$$123`
 
 3. **Features available:**
    - ✅ Dynamic AI responses
@@ -98,7 +96,7 @@
 
 - Check Render logs in the dashboard
 - Verify all files are committed to GitHub
-- Test locally first: `npm install && npm start`
+- Test locally first: `npm ci && npm run build && npm start`
 
 ## 🎯 Features
 
@@ -117,7 +115,7 @@ Your deployed Hunger Games AI will include:
 
 The game is fully responsive and works great on:
 - 📱 Mobile phones
-- 📱 Tablets  
+- 📱 Tablets
 - 💻 Desktop computers
 - 🖥️ All modern browsers
 
@@ -133,4 +131,4 @@ The game is fully responsive and works great on:
 
 ---
 
-**Happy Gaming! May the odds be ever in your favor! 🏆** 
+**Happy Gaming! May the odds be ever in your favor! 🏆**

@@ -1,6 +1,6 @@
 // Authentication state
 let currentUser = null;
-let authToken = localStorage.getItem('authToken');
+let authToken=null;try{authToken=localStorage.getItem('authToken');}catch{}
 
 // Check if user is already logged in
 if (authToken) {
@@ -89,13 +89,15 @@ function redirectToGame() {
 
 // Play as guest
 function playAsGuest() {
-    currentUser = { id: 'guest', username: 'Guest Player' };
+    try{localStorage.removeItem('authToken');localStorage.removeItem('currentUser');}catch{}
+    authToken=null;currentUser = { id: 'guest', username: 'Guest Player' };
     redirectToGame();
 }
 
 // Login form handler
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if(document.getElementById(e.currentTarget.id==='loginForm'?'loginBtn':'registerBtn').disabled)return;
     clearMessages();
     
     const username = document.getElementById('loginUsername').value.trim();
@@ -142,6 +144,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 // Register form handler
 document.getElementById('registerForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if(document.getElementById(e.currentTarget.id==='loginForm'?'loginBtn':'registerBtn').disabled)return;
     clearMessages();
     
     const username = document.getElementById('registerUsername').value.trim();
@@ -218,15 +221,4 @@ document.querySelectorAll('.form-input').forEach(input => {
     });
 });
 
-// Add enter key support for form switching
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        const activeForm = document.querySelector('.auth-form[style*="display: block"]');
-        if (activeForm) {
-            const submitBtn = activeForm.querySelector('button[type="submit"]');
-            if (submitBtn && !submitBtn.disabled) {
-                submitBtn.click();
-            }
-        }
-    }
-}); 
+// Native form submission handles Enter without submitting a second request.

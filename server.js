@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const bodyParser = require('body-parser');
+const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
@@ -13,12 +14,23 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // JWT secret (in production, use a strong secret from environment variables)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const secretFile = path.join(path.dirname(process.env.DB_FILE || path.join(__dirname, 'game.db')), '.jwt-secret');
+fs.mkdirSync(path.dirname(secretFile),{recursive:true});
+let JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    try { JWT_SECRET = fs.readFileSync(secretFile, 'utf8').trim(); } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+        JWT_SECRET = crypto.randomBytes(48).toString('hex');
+        fs.writeFileSync(secretFile, JWT_SECRET, { mode: 0o600, flag: 'wx' });
+    }
+}
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static('public'));
+app.disable('x-powered-by');
+app.use(express.json({ limit: '512kb' }));
+app.use((req,res,next) => { res.setHeader('X-Content-Type-Options','nosniff'); next(); });
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -38,44 +50,27 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Initialize database
-initializeDatabase().then(() => {
-    console.log('Database initialized successfully');
-}).catch(err => {
-    console.error('Database initialization failed:', err);
+const ready = initializeDatabase();
+app.use((req, res, next) => ready.then(() => next()).catch(next));
+const requests = new Map();
+app.use('/api', (req,res,next) => {
+    if (req.method === 'GET') return next();
+    const key = req.ip;
+    const now = Date.now();
+    const entry = requests.get(key);
+    if (!entry || now-entry.time > 60000) { if (requests.size > 5000) requests.clear(); requests.set(key,{time:now,count:1}); }
+    else if (++entry.count > 100) return res.status(429).json({error:'Too many requests. Try again in a minute.'});
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) return res.status(400).json({error:'A JSON object is required.'});
+    next();
 });
-
-// --- Development Helper: Auto-create 'Dev' user ---
-async function ensureDevUserExists() {
-    try {
-        const devUser = await userDB.getUserByUsername('Dev');
-        if (!devUser) {
-            console.log('[Dev Helper] "Dev" user not found. Creating...');
-            const passwordHash = await bcrypt.hash('IAmDev$$$123', 10);
-            await userDB.createUser('Dev', passwordHash, 'dev@example.com');
-            console.log('[Dev Helper] "Dev" user created successfully.');
-        } else {
-            console.log('[Dev Helper] "Dev" user already exists.');
-        }
-    } catch (error) {
-        console.error('[Dev Helper] Error ensuring dev user exists:', error);
-    }
-}
-// Call this after DB initialization
-initializeDatabase().then(ensureDevUserExists);
-// --- End Development Helper ---
-
-// OpenAI configuration
-let openai = null;
-if (process.env.OPENAI_API_KEY) {
-    const OpenAI = require('openai');
-    openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY
-    });
-    console.log('OpenAI API configured successfully');
-} else {
-    console.log('OpenAI API key not found - free roam AI features will be disabled');
-}
+const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.length <= max;
+const validSave = body => {try {const state=JSON.parse(body.storyState);return typeof body.storyState==='string' && body.storyState.length<=400000 && state && typeof state==='object' && !Array.isArray(state) && body.characterData && typeof body.characterData==='object' && !Array.isArray(body.characterData);}catch{return false;}};
+// Optional AI uses the HTTP API directly, so a configured key requires no undeclared SDK.
+const openai = process.env.OPENAI_API_KEY ? {chat:{completions:{create: async body => {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${process.env.OPENAI_API_KEY}`},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
+    if (!response.ok) throw new Error(`AI request failed (${response.status})`);
+    return response.json();
+}}}} : null;
 
 // Email configuration
 let emailTransporter = null;
@@ -106,18 +101,7 @@ async function sendFeedbackNotification(feedback) {
             from: process.env.EMAIL_USER,
             to: process.env.ADMIN_EMAIL,
             subject: `New Feedback: ${feedback.subject}`,
-            html: `
-                <h2>New Feedback Received</h2>
-                <p><strong>From:</strong> ${feedback.username || 'Anonymous'}</p>
-                <p><strong>Subject:</strong> ${feedback.subject}</p>
-                <p><strong>Rating:</strong> ${feedback.rating ? feedback.rating + '/5' : 'Not provided'}</p>
-                <p><strong>Message:</strong></p>
-                <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
-                    ${feedback.message.replace(/\n/g, '<br>')}
-                </div>
-                <p><strong>Submitted:</strong> ${new Date(feedback.created_at).toLocaleString()}</p>
-                <p><strong>User ID:</strong> ${feedback.user_id || 'Anonymous'}</p>
-            `
+            text: `From: ${feedback.username || 'Anonymous'}\nSubject: ${feedback.subject}\nRating: ${feedback.rating || 'Not provided'}\n\n${feedback.message}`
         };
 
         await emailTransporter.sendMail(mailOptions);
@@ -132,10 +116,11 @@ app.post('/api/register', async (req, res) => {
     try {
         const { username, password, email } = req.body;
 
-        if (!username || !password) {
+        if (!text(username, 32) || !text(password, 128) || Buffer.byteLength(password,'utf8')>72) {
             return res.status(400).json({ error: 'Username and password are required' });
         }
 
+        if (email != null && email !== '' && (!text(email,254) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) return res.status(400).json({error:'Invalid email'});
         if (password.length < 6) {
             return res.status(400).json({ error: 'Password must be at least 6 characters long' });
         }
@@ -150,7 +135,7 @@ app.post('/api/register', async (req, res) => {
         const passwordHash = await bcrypt.hash(password, 10);
 
         // Create user
-        const user = await userDB.createUser(username, passwordHash, email);
+        const user = await userDB.createUser(username, passwordHash, email || null);
 
         // Generate JWT token
         const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
@@ -171,26 +156,22 @@ app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
 
-        if (!username || !password) {
+        if (!text(username, 32) || !text(password, 128) || Buffer.byteLength(password,'utf8')>72) {
             return res.status(400).json({ error: 'Username and password are required' });
         }
 
-        console.log(`Login attempt for username: ${username}`);
 
         // Get user
         const user = await userDB.getUserByUsername(username);
         if (!user) {
-            console.log(`[Login Auth] Failure: User '${username}' not found in database.`);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        console.log(`[Login Auth] Success: User '${username}' found. Hashed password from DB: ${user.password_hash}`);
 
         // Check password
         const validPassword = await bcrypt.compare(password, user.password_hash);
         
         if (!validPassword) {
-            console.log(`[Login Auth] Failure: Password validation failed for user '${username}'.`);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
@@ -200,7 +181,6 @@ app.post('/api/login', async (req, res) => {
         // Generate JWT token
         const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
 
-        console.log(`Login successful for '${username}'`);
 
         res.json({
             message: 'Login successful',
@@ -233,7 +213,7 @@ app.post('/api/saves', authenticateToken, async (req, res) => {
     try {
         const { saveName, storyState, characterData } = req.body;
 
-        if (!saveName || !storyState || !characterData) {
+        if (!text(saveName,80) || !validSave(req.body)) {
             return res.status(400).json({ error: 'Save name, story state, and character data are required' });
         }
 
@@ -276,11 +256,12 @@ app.put('/api/saves/:saveId', authenticateToken, async (req, res) => {
     try {
         const { storyState, characterData } = req.body;
 
-        if (!storyState || !characterData) {
+        if (!validSave(req.body)) {
             return res.status(400).json({ error: 'Story state and character data are required' });
         }
 
-        await saveDB.updateSave(req.params.saveId, storyState, characterData);
+        const changed = await saveDB.updateSave(req.params.saveId, storyState, characterData, req.user.userId);
+        if (!changed) return res.status(404).json({error:'Save not found'});
         res.json({ message: 'Save updated successfully' });
     } catch (error) {
         console.error('Update save error:', error);
@@ -290,7 +271,8 @@ app.put('/api/saves/:saveId', authenticateToken, async (req, res) => {
 
 app.delete('/api/saves/:saveId', authenticateToken, async (req, res) => {
     try {
-        await saveDB.deleteSave(req.params.saveId, req.user.userId);
+        const changed = await saveDB.deleteSave(req.params.saveId, req.user.userId);
+        if (!changed) return res.status(404).json({error:'Save not found'});
         res.json({ message: 'Save deleted successfully' });
     } catch (error) {
         console.error('Delete save error:', error);
@@ -303,7 +285,7 @@ app.post('/api/feedback', async (req, res) => {
     try {
         const { subject, message, rating, username } = req.body;
 
-        if (!subject || !message) {
+        if (!text(subject,120) || !text(message,4000) || (username != null && !text(username,32)) || (rating != null && (!Number.isInteger(Number(rating)) || Number(rating)<1 || Number(rating)>5))) {
             return res.status(400).json({ error: 'Subject and message are required' });
         }
 
@@ -321,7 +303,7 @@ app.post('/api/feedback', async (req, res) => {
         const feedback = await feedbackDB.submitFeedback(userId, username, subject, message, rating);
         
         // Send email notification
-        await sendFeedbackNotification(feedback);
+        await sendFeedbackNotification({...feedback,subject,message,rating,username,user_id:userId,created_at:new Date().toISOString()});
         
         res.json({ message: 'Feedback submitted successfully', feedback });
     } catch (error) {
@@ -330,15 +312,7 @@ app.post('/api/feedback', async (req, res) => {
     }
 });
 
-app.get('/api/feedback', async (req, res) => {
-    try {
-        const feedback = await feedbackDB.getFeedback();
-        res.json({ feedback });
-    } catch (error) {
-        console.error('Get feedback error:', error);
-        res.status(500).json({ error: 'Failed to get feedback' });
-    }
-});
+app.get('/api/feedback', (_req,res) => res.status(404).json({error:'Feedback is private.'}));
 
 // Game statistics routes
 app.post('/api/stats', authenticateToken, async (req, res) => {
@@ -349,6 +323,8 @@ app.post('/api/stats', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Save ID and stats are required' });
         }
 
+        if (!(await saveDB.getSaveById(saveId, req.user.userId))) return res.status(404).json({error:'Save not found'});
+        if (typeof stats !== 'object' || ['actionsPerformed','sponsorPointsEarned','trainingScore','playTimeMinutes'].some(key => stats[key] != null && (!Number.isFinite(stats[key]) || stats[key]<0 || stats[key]>1000000))) return res.status(400).json({error:'Invalid stats'});
         await statsDB.updateGameStats(req.user.userId, saveId, stats);
         res.json({ message: 'Stats updated successfully' });
     } catch (error) {
@@ -369,17 +345,17 @@ app.get('/api/stats', authenticateToken, async (req, res) => {
 
 // GPT-powered free roam endpoint
 app.post('/api/free-roam', async (req, res) => {
+    const {action,playerStats,storyContext} = req.body;
+    if (!text(action,500) || !playerStats || typeof playerStats !== 'object' || Array.isArray(playerStats) || (storyContext != null && !text(storyContext,4000))) return res.status(400).json({error:'A valid action and player stats are required'});
+    if (openai) {
+        try { jwt.verify((req.headers.authorization || '').replace(/^Bearer /,''), JWT_SECRET); } catch { return res.status(401).json({error:'Sign in to use AI narration'}); }
+    }
     try {
-        console.log('[Server Debug] Free roam request received');
-        console.log('[Server Debug] Request body:', req.body);
         
         const { action, playerStats, storyContext } = req.body;
         
-        console.log(`Free roam action: ${action}`);
-        console.log(`Player stats:`, playerStats);
         
         if (!openai) {
-            console.log('[Server Debug] OpenAI not configured, using fallback responses');
             const actionLower = action.toLowerCase();
             // Helper: random int
             function randInt(max) { return Math.floor(Math.random() * max); }
@@ -497,7 +473,6 @@ app.post('/api/free-roam', async (req, res) => {
                 `"${action}" - good thinking. You ${action.toLowerCase()}, and the arena's dynamics shift slightly. The action helps you better position yourself for whatever comes next. You're learning that in the Games, every action is both a risk and an opportunity.`
             ];
             const randomResponse = enhancedFallbackResponses[randInt(enhancedFallbackResponses.length)];
-            console.log('[Server Debug] Using enhanced fallback response (no OpenAI):', randomResponse);
             return res.json({ response: randomResponse });
         }
         
@@ -526,7 +501,6 @@ Write a 2-3 sentence response describing what happens when the player tries this
         });
 
         const response = completion.choices[0].message.content.trim();
-        console.log('OpenAI response received:', response);
         res.json({ response });
 
     } catch (error) {
@@ -543,9 +517,11 @@ Write a 2-3 sentence response describing what happens when the player tries this
 });
 
 // Leaderboard routes
-app.post('/api/leaderboard', async (req, res) => {
+app.post('/api/leaderboard', authenticateToken, async (req, res) => {
     try {
-        const { username, district, winType } = req.body;
+        const {district, winType} = req.body;
+        const username = req.user.username;
+        if (!text(district,32) || !['Hunger Games Champion','Cheat Win'].includes(winType)) return res.status(400).json({error:'Invalid result'});
         if (!username || !winType) {
             return res.status(400).json({ error: 'Username and win type are required' });
         }
@@ -559,121 +535,12 @@ app.post('/api/leaderboard', async (req, res) => {
 
 app.get('/api/leaderboard', async (req, res) => {
     try {
-        const limit = parseInt(req.query.limit) || 20;
+        const limit = Math.max(1,Math.min(100,parseInt(req.query.limit) || 20));
         const top = await leaderboardDB.getTop(limit);
         res.json({ leaderboard: top });
     } catch (error) {
         console.error('Get leaderboard error:', error);
         res.status(500).json({ error: 'Failed to get leaderboard' });
-    }
-});
-
-// Password reset endpoint (for debugging)
-app.post('/api/admin/reset-password', async (req, res) => {
-    try {
-        const { username, newPassword } = req.body;
-        
-        if (!username || !newPassword) {
-            return res.status(400).json({ error: 'Username and new password are required' });
-        }
-        
-        // Get user
-        const user = await userDB.getUserByUsername(username);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        
-        // Hash new password
-        const newPasswordHash = await bcrypt.hash(newPassword, 10);
-        
-        // Update password in database
-        await new Promise((resolve, reject) => {
-            const db = require('./database').db;
-            db.run(
-                'UPDATE users SET password_hash = ? WHERE id = ?',
-                [newPasswordHash, user.id],
-                (err) => {
-                    if (err) reject(err);
-                    else resolve();
-                }
-            );
-        });
-        
-        console.log(`Password reset for user '${username}'`);
-        
-        res.json({ 
-            message: 'Password reset successfully',
-            username: username
-        });
-        
-    } catch (error) {
-        console.error('Password reset error:', error);
-        res.status(500).json({ error: 'Failed to reset password' });
-    }
-});
-
-// Admin route to check if user exists (for debugging)
-app.get('/api/admin/check-user/:username', async (req, res) => {
-    try {
-        const { username } = req.params;
-        const user = await userDB.getUserByUsername(username);
-        
-        if (user) {
-            res.json({ 
-                exists: true, 
-                id: user.id, 
-                username: user.username,
-                created_at: user.created_at 
-            });
-        } else {
-            res.json({ exists: false });
-        }
-    } catch (error) {
-        console.error('Check user error:', error);
-        res.status(500).json({ error: 'Failed to check user' });
-    }
-});
-
-// Simple Dev user reset endpoint
-app.post('/api/admin/reset-dev', async (req, res) => {
-    try {
-        console.log('Resetting Dev user...');
-        
-        // Check if Dev user exists
-        let devUser = await userDB.getUserByUsername('Dev');
-        
-        if (devUser) {
-            console.log('Dev user exists, updating password...');
-            // Update password
-            const newPasswordHash = await bcrypt.hash('IAmDev$$$123', 10);
-            await new Promise((resolve, reject) => {
-                const db = require('./database').db;
-                db.run(
-                    'UPDATE users SET password_hash = ? WHERE username = ?',
-                    [newPasswordHash, 'Dev'],
-                    (err) => {
-                        if (err) reject(err);
-                        else resolve();
-                    }
-                );
-            });
-        } else {
-            console.log('Dev user does not exist, creating...');
-            // Create new Dev user
-            const passwordHash = await bcrypt.hash('IAmDev$$$123', 10);
-            await userDB.createUser('Dev', passwordHash, 'dev@example.com');
-        }
-        
-        console.log('Dev user reset successful');
-        res.json({ 
-            message: 'Dev user reset successfully',
-            username: 'Dev',
-            password: 'IAmDev$$$123'
-        });
-        
-    } catch (error) {
-        console.error('Dev user reset error:', error);
-        res.status(500).json({ error: 'Failed to reset Dev user' });
     }
 });
 
@@ -704,8 +571,10 @@ app.get('/story.json', (req, res) => {
     }
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server running on ${PORT}`);
-    console.log(`OpenAI API Key: ${process.env.OPENAI_API_KEY ? 'Configured' : 'Missing'}`);
+app.get('/health', (_req,res) => res.json({status:'ok'}));
+app.use((err,req,res,next) => {
+    if (res.headersSent) return next(err);
+    res.status(err.status || 500).json({error:err.status === 400 ? 'Invalid JSON' : err.status === 413 ? 'Request too large' : 'Request failed'});
 });
+module.exports = {app, ready};
+if (require.main === module) ready.then(() => app.listen(PORT, () => console.log(`Server running on ${PORT}`))).catch(error => {console.error('Database initialization failed:',error.message);process.exitCode=1;});

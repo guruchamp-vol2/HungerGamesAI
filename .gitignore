@@ -63,3 +63,9 @@ jspm_packages/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+.jwt-secret
+
+game.db-wal
+
+game.db-shm
