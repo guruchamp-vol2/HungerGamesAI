@@ -16,7 +16,7 @@ function restoreTranscript(lines){$('storyContainer').replaceChildren();for(cons
 function activateTab(id){document.querySelectorAll('.game-tab').forEach(tab=>{tab.classList.toggle('active',tab.dataset.panel===id);tab.setAttribute('aria-selected',String(tab.dataset.panel===id));});document.querySelectorAll('.game-panel').forEach(panel=>panel.classList.toggle('active',panel.id===id));}
 document.querySelectorAll('.game-tab').forEach(tab=>tab.onclick=()=>activateTab(tab.dataset.panel));
 async function api(route,body,method=body===undefined?'GET':'POST'){
-  const response=await fetch(route,{method,headers:{'Content-Type':'application/json',...(authToken?{Authorization:'Bearer '+authToken}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:route.startsWith('/api/ai/') || route==='/api/free-roam'?AbortSignal.timeout(16000):undefined});
+  const response=await fetch(route,{method,headers:{'Content-Type':'application/json',...(authToken?{Authorization:'Bearer '+authToken}:{})},body:body===undefined?undefined:JSON.stringify(body)});
   const data=await response.json();if(!response.ok)throw Error(data.error || 'The request failed.');return data;
 }
 async function checkAuthentication(){
@@ -25,7 +25,7 @@ async function checkAuthentication(){
   $('authLink').textContent=currentUser.id==='guest'?'Sign in':'Sign out';
   $('authLink').onclick=event=>{if(currentUser.id!=='guest'){event.preventDefault();logout();}};
 }
-function logout(){storage.removeItem('authToken');storage.removeItem('currentUser');authToken=null;currentUser={id:'guest',username:'Guest Player'};checkAuthentication();$('aiNarration').checked=false;checkDirector();loadUserSaves();notice('Signed out. Your local checkpoint is still available.');}
+function logout(){storage.removeItem('authToken');storage.removeItem('currentUser');authToken=null;currentUser={id:'guest',username:'Guest Player'};checkAuthentication();loadUserSaves();notice('Signed out. Your local checkpoint is still available.');}
 async function loadStory(){
   $('storyContainer').replaceChildren();$('choices').replaceChildren();notice('');
   try{const response=await fetch('/story.json?v=arena-ai-4',{cache:'no-store'});if(!response.ok)throw Error('Story file unavailable');const data=await response.json();storyContent=data;story=new inkjs.Story(data);continueStory();}
@@ -76,7 +76,7 @@ function syncStory(){
 }
 function directorPayload(action,events=[]){
   return {action,state:gameExtras.survival,character:charData,events,style:$('narrationStyle').value,
-    memory:Array.isArray(gameExtras.directorMemory)?gameExtras.directorMemory.slice(-6):[],mode:$('aiNarration').checked?'ai':'local'};
+    memory:Array.isArray(gameExtras.directorMemory)?gameExtras.directorMemory.slice(-6):[],mode:'local'};
 }
 let proposedAction=null;
 function clearProposal(){proposedAction=null;$('intentPreview').hidden=true;}
@@ -91,7 +91,7 @@ function rememberNarration(action,response){
 function renderCoach(){
   const list=$('coachSuggestions');list.replaceChildren();
   $('directorMemory').textContent=(Array.isArray(gameExtras.directorMemory)?gameExtras.directorMemory:[]).length+' recent scenes remembered';
-  $('directorSource').textContent=gameExtras.directorSource==='ai'?'AI director':'Local director';
+  $('directorSource').textContent='Free local director';
   if(!gameExtras.survival){list.append(element('p','Your survival coach becomes available after training.','muted'));return;}
   const suggestions=ArenaDirector.suggest(gameExtras.survival);
   if(!suggestions.length){list.append(element('p','This run is complete. Begin a new tribute to return to the arena.','muted'));return;}
@@ -104,11 +104,7 @@ async function handleFreeRoamAction(action){
   clearProposal();busy=true;renderControls();renderCoach();
   try{
     if(!SurvivalEngine.parse(action)){
-      let interpreted=ArenaDirector.interpret(action);
-      if(!interpreted && $('aiNarration').checked && currentUser.id!=='guest'){
-        $('typingIndicator').hidden=false;
-        try{const result=await api('/api/ai/intent',directorPayload(action));interpreted=result.action;}catch{notice('AI interpretation is unavailable. Try a direction, search, rest, or craft shelter.');}
-      }
+      const interpreted=$('interpretActions').checked?ArenaDirector.interpret(action):null;
       if(interpreted){proposeAction(interpreted);return;}
       notice('That action has no arena command yet. Try a direction, search, gather wood, rest, hide, or one of the coach suggestions.');return;
     }
@@ -118,16 +114,10 @@ async function handleFreeRoamAction(action){
     syncStory();updateCharacterStats();
     if(result.consumed && $('narrationEnabled').checked){
       const payload=directorPayload(action,result.events),ctx=ArenaDirector.context(payload);
-      let narration={response:ArenaDirector.localNarration(ctx),source:'local'};
-      if($('aiNarration').checked && currentUser.id!=='guest'){
-        $('typingIndicator').hidden=false;
-        try{narration=await api('/api/free-roam',payload);}catch{notice('AI narration is unavailable. The local director is continuing your story.');}
-      }
-      if(narration.source!=='local' || payload.style!=='brief')appendStory(narration.response,'ai-narration');
+      const narration={response:ArenaDirector.localNarration(ctx),source:'local'};
+      if(payload.style!=='brief')appendStory(narration.response,'ai-narration');
       rememberNarration(action,narration.response);gameExtras.directorSource=narration.source;
-      $('directorSource').textContent=narration.source==='ai'?'AI director':'Local director';
-      if(narration.reason==='rate_limited')notice('The director is taking a short break. Local narration continues.');
-      else if(narration.reason==='provider_unavailable')notice('AI is temporarily unavailable. Local narration continues.');
+      $('directorSource').textContent='Free local director';
     }
     renderArena();checkpoint();
     if(result.state.status!=='active'){
@@ -254,11 +244,8 @@ $('narrationStyle').onchange=()=>{storage.setItem('hunger-narration-style',$('na
 $('narrationEnabled').onchange=()=>{storage.setItem('hunger-narration-enabled',String($('narrationEnabled').checked));};
 const savedStyle=storage.getItem('hunger-narration-style');if(ArenaDirector.STYLES.includes(savedStyle))$('narrationStyle').value=savedStyle;
 $('narrationEnabled').checked=storage.getItem('hunger-narration-enabled')!=='false';
-async function checkDirector(){
-  $('aiNarration').disabled=true;
-  try{const status=await api('/api/ai/status');const signedIn=currentUser.id!=='guest';$('aiNarration').disabled=!status.available || !signedIn;$('directorAvailability').textContent=!status.available?'Local narration is ready. AI narration is unavailable on this server.':!signedIn?'Sign in to enable AI narration. Local narration is ready.':'AI narration is available. Enable it to use the arena director.';}
-  catch{$('directorAvailability').textContent='Local narration is ready.';}
-}
+$('interpretActions').checked=storage.getItem('hunger-interpret-actions')!=='false';
+$('interpretActions').onchange=()=>storage.setItem('hunger-interpret-actions',String($('interpretActions').checked));
 $('actionForm').onsubmit=event=>{event.preventDefault();const value=$('cmdInput').value;$('cmdInput').value='';handleFreeRoamAction(value);};
 document.querySelectorAll('[data-action]').forEach(button=>button.onclick=()=>handleFreeRoamAction(button.dataset.action));
 $('saveForm').onsubmit=event=>{event.preventDefault();saveGame();};
@@ -269,7 +256,7 @@ $('exportRun').onclick=exportRun;$('exportJournal').onclick=exportJournal;
 window.addEventListener('beforeunload',checkpoint);
 window.addEventListener('keydown',event=>{if(event.ctrlKey || event.altKey || event.metaKey || event.target.closest('input,textarea,select,button,dialog'))return;const action={ArrowUp:'north',ArrowDown:'south',ArrowLeft:'west',ArrowRight:'east'}[event.key];if(action && gameExtras.survival?.status==='active'){event.preventDefault();handleFreeRoamAction(action);}});
 (async()=>{
-  await checkAuthentication();checkDirector();
+  await checkAuthentication();
   try{const response=await fetch('/story.json?v=arena-ai-4',{cache:'no-store'});if(!response.ok)throw Error();storyContent=await response.json();}catch{notice('Story file unavailable. Retry when connected.');}
   await loadStory();renderRecord();loadUserSaves();loadLeaderboardPreview();renderArena();
 })();

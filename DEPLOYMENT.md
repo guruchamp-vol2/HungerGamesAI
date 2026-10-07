@@ -150,3 +150,7 @@ Check `/api/version` for `arena-ai-4` and the deployed commit. Check `/api/ai/st
 The former third-party `sqlite3` binary required a Linux library unavailable on the Render runtime. The application now uses Node's built-in SQLite, preserving the existing SQLite file and removing that external binary dependency. Node 22.23.3 is pinned in `.node-version` and the blueprint. An existing Render `NODE_VERSION` environment override takes precedence; set it to `22.23.3` for the tested runtime.
 
 Deploy the newest `main` commit with `npm ci --include=dev && npm run build` and `npm start` (or `node server.js`). If a previous deployment still fails with a `node_modules/sqlite3` stack trace, use **Manual Deploy → Clear build cache & deploy**. The new dependency tree does not contain that addon. Keep the configured persistent disk and `DB_FILE` path intact; no database deletion or account reset is needed. A successful new startup logs “Arena AI 4,” and `/api/version` returns `arena-ai-4`.
+
+### Free director mode
+
+The game UI uses local narration and natural-language interpretation only. It requires no OpenAI key, billing, or sign-in and makes no provider requests, even if `OPENAI_API_KEY` is configured for the optional backend endpoints. Deploy the latest commit to replace the old disabled AI checkbox with the free natural-language toggle. Narration styles, scene memory, and survival coaching continue to work locally.
