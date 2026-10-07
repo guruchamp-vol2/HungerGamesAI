@@ -69,12 +69,9 @@ app.use('/api', (req,res,next) => {
 });
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.length <= max;
 const validSave = body => {try {const state=JSON.parse(body.storyState);return typeof body.storyState==='string' && body.storyState.length<=400000 && state && typeof state==='object' && !Array.isArray(state) && body.characterData && typeof body.characterData==='object' && !Array.isArray(body.characterData);}catch{return false;}};
-// Optional AI uses the HTTP API directly, so a configured key requires no undeclared SDK.
-const openai = process.env.OPENAI_API_KEY ? {chat:{completions:{create: async body => {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${process.env.OPENAI_API_KEY}`},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
-    if (!response.ok) throw new Error(`AI request failed (${response.status})`);
-    return response.json();
-}}}} : null;
+const {createDirector}=require('./ai-director');
+const director=require('./public/director');
+const arenaDirector=createDirector();
 
 // Email configuration
 let emailTransporter = null;
@@ -347,177 +344,35 @@ app.get('/api/stats', authenticateToken, async (req, res) => {
     }
 });
 
-// GPT-powered free roam endpoint
-app.post('/api/free-roam', async (req, res) => {
-    const {action,playerStats,storyContext} = req.body;
-    if (!text(action,500) || !playerStats || typeof playerStats !== 'object' || Array.isArray(playerStats) || (storyContext != null && !text(storyContext,4000))) return res.status(400).json({error:'A valid action and player stats are required'});
-    if (openai) {
-        try { jwt.verify((req.headers.authorization || '').replace(/^Bearer /,''), JWT_SECRET); } catch { return res.status(401).json({error:'Sign in to use AI narration'}); }
+// Narration describes resolved actions; it never edits gameplay state.
+app.get('/api/ai/status', (_req,res)=>res.json(arenaDirector.status()));
+app.get('/api/version', (_req,res)=>res.json({version:'arena-ai-4',commit:process.env.RENDER_GIT_COMMIT || null}));
+function aiIdentity(req){
+    if(!arenaDirector.status().available || req.body.mode==='local')return 'local';
+    try{return jwt.verify((req.headers.authorization || '').replace(/^Bearer /,''),JWT_SECRET).userId;}
+    catch{return null;}
+}
+app.post('/api/free-roam',async(req,res)=>{
+    const payload=req.body;
+    if(!text(payload.action,500))return res.status(400).json({error:'A valid action is required.'});
+    // Old clients may send only character statistics. Never invent mechanical outcomes.
+    if(!payload.state){
+        if(!payload.playerStats || typeof payload.playerStats!=='object' || Array.isArray(payload.playerStats))return res.status(400).json({error:'Arena state is required.'});
+        return res.json({response:payload.playerStats.health===0?'Your tribute has no health remaining. This run has ended.':'Reload the game to use the current arena director.',suggestions:[],source:'local',reason:'legacy_client'});
     }
-    try {
-        
-        const { action, playerStats, storyContext } = req.body;
-        
-        
-        if (!openai) {
-            const actionLower = action.toLowerCase();
-            // Helper: random int
-            function randInt(max) { return Math.floor(Math.random() * max); }
-            // Helper: lose health
-            function loseHealth(amount) {
-                if (playerStats && typeof playerStats.health === 'number') {
-                    playerStats.health = Math.max(0, playerStats.health - amount);
-                }
-            }
-            // Helper: enemy encounter
-            function enemyAttack() {
-                loseHealth(20 + randInt(20));
-                return `Suddenly, a tribute leaps from the shadows and attacks! You fight desperately, taking some hits before you manage to escape. Your health is now ${playerStats.health}. The Games just got more dangerous.`;
-            }
-            // Water actions
-            if (actionLower.includes('water') || actionLower.includes('river') || actionLower.includes('stream') || actionLower.includes('lake')) {
-                if (randInt(4) === 0) {
-                    loseHealth(10);
-                    return res.json({ response: `You go to the water and drink, but something tastes off. You feel sick and lose some health. Your health is now ${playerStats.health}.` });
-                }
-                if (randInt(4) === 0) {
-                    return res.json({ response: `You go to the water and ${enemyAttack()}` });
-                }
-                const waterResponses = [
-                    `You go to the water and find a clear stream. You drink deeply and feel refreshed. The water is clean and safe, giving you much-needed hydration.`,
-                    `You go to the water and discover a small pond. You drink your fill and notice some edible berries growing nearby. This could be a good spot to return to later.`,
-                    `You go to the water and find a rushing river. The water is cold and invigorating. You drink and wash your face, feeling more alert and ready to continue.`
-                ];
-                const randomResponse = waterResponses[randInt(waterResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            // Run actions
-            if (actionLower.includes('run') || actionLower.includes('sprint') || actionLower.includes('dash')) {
-                if (randInt(4) === 0) {
-                    return res.json({ response: `You run and ${enemyAttack()}` });
-                }
-                if (randInt(4) === 0) {
-                    loseHealth(10);
-                    return res.json({ response: `You run and trip over a root, scraping your knee. You lose some health. Your health is now ${playerStats.health}.` });
-                }
-                const runResponses = [
-                    `You run and cover a lot of ground quickly. You find yourself in a new area of the arena with better cover. The sprint was worth the effort.`,
-                    `You run and discover a hidden path through the underbrush. This could be useful for escaping danger later. Your training pays off.`,
-                    `You run and reach a small clearing. The area looks safe and you can see for some distance. This might be a good place to rest.`
-                ];
-                const randomResponse = runResponses[randInt(runResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            // Jump/Climb actions
-            if (actionLower.includes('jump') || actionLower.includes('leap') || actionLower.includes('climb')) {
-                if (randInt(4) === 0) {
-                    loseHealth(15);
-                    return res.json({ response: `You jump and misjudge the distance, falling and injuring yourself. You lose some health. Your health is now ${playerStats.health}.` });
-                }
-                if (randInt(4) === 0) {
-                    return res.json({ response: `You jump and ${enemyAttack()}` });
-                }
-                const jumpResponses = [
-                    `You jump and successfully clear a fallen log. From the higher vantage point, you spot a potential shelter in the distance. The jump gives you a tactical advantage.`,
-                    `You jump and land gracefully on a large rock. The new position gives you a better view of the surrounding area. You notice some useful terrain features.`,
-                    `You jump and clear a small stream, avoiding getting wet. The movement is smooth and you feel more confident in your abilities.`
-                ];
-                const randomResponse = jumpResponses[randInt(jumpResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            // Walk/Move actions
-            if (actionLower.includes('walk') || actionLower.includes('move') || actionLower.includes('go')) {
-                if (randInt(5) === 0) {
-                    return res.json({ response: `You walk and ${enemyAttack()}` });
-                }
-                const walkResponses = [
-                    `You walk and discover a hidden path through the underbrush. The area looks safe and you can move quietly. This could be a good escape route.`,
-                    `You walk and find yourself in a small clearing with good visibility. The area seems peaceful and you can see for some distance.`,
-                    `You walk and come across some useful materials - sturdy branches and vines that could be used for building or crafting.`
-                ];
-                const randomResponse = walkResponses[randInt(walkResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            // Rest actions
-            if (actionLower.includes('rest') || actionLower.includes('sleep') || actionLower.includes('sit')) {
-                if (randInt(3) === 0) {
-                    return res.json({ response: `You rest and ${enemyAttack()}` });
-                }
-                if (randInt(4) === 0) {
-                    loseHealth(10);
-                    return res.json({ response: `You rest and are startled awake by a noise. You scramble to your feet and scrape yourself on a sharp rock. Your health is now ${playerStats.health}.` });
-                }
-                const restResponses = [
-                    `You rest and feel much better. Your energy is restored and you're ready to continue. The brief break was exactly what you needed.`,
-                    `You rest and find a comfortable spot under a large tree. The area is well-hidden and you can see approaching threats. This is a good place to recover.`,
-                    `You rest and take the time to assess your situation. You feel more focused and ready to face whatever comes next.`
-                ];
-                const randomResponse = restResponses[randInt(restResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            // Build/Craft actions
-            if (actionLower.includes('build') || actionLower.includes('make') || actionLower.includes('create')) {
-                if (randInt(4) === 0) {
-                    return res.json({ response: `You build and ${enemyAttack()}` });
-                }
-                const buildResponses = [
-                    `You build a simple shelter using branches and leaves. The structure provides good cover and could protect you from the elements. Your crafting skills are paying off.`,
-                    `You build a small trap using vines and sticks. The device looks effective and could help you catch food or defend yourself.`,
-                    `You build a makeshift weapon from available materials. The tool feels solid in your hands and could be useful in a fight.`
-                ];
-                const randomResponse = buildResponses[randInt(buildResponses.length)];
-                return res.json({ response: randomResponse });
-            }
-            // Generic but more action-aware responses for other actions
-            const enhancedFallbackResponses = [
-                `"${action}" - that's an interesting choice. You ${action.toLowerCase()}, and immediately the arena responds to your decision. The action feels purposeful, and you sense that every choice you make is being watched by both the Capitol and your fellow tributes. Your training kicks in, helping you execute the action effectively.`,
-                `You decide to ${action.toLowerCase()}, and the arena's atmosphere shifts around you. The action feels right in this moment, and you can sense the weight of your decisions. Every movement in the Games has consequences, and you're learning to read the arena's subtle signals.`,
-                `"${action}" - a strategic move. You ${action.toLowerCase()}, and the arena seems to acknowledge your choice. The action helps you better understand your environment and your place within it. You're adapting to the Games, learning to make decisions that could mean the difference between life and death.`,
-                `You choose to ${action.toLowerCase()}, and the arena responds to your initiative. The action feels natural, as if you're finally finding your rhythm in this deadly game. Every choice is a step toward survival, and you're learning to trust your instincts.`,
-                `"${action}" - good thinking. You ${action.toLowerCase()}, and the arena's dynamics shift slightly. The action helps you better position yourself for whatever comes next. You're learning that in the Games, every action is both a risk and an opportunity.`
-            ];
-            const randomResponse = enhancedFallbackResponses[randInt(enhancedFallbackResponses.length)];
-            return res.json({ response: randomResponse });
-        }
-        
-        const prompt = `You are narrating a Hunger Games interactive story. The player is in the arena and has typed: "${action}"
-
-Player Stats:
-- Name: ${playerStats.name || 'Tribute'}
-- District: ${playerStats.district || 'Unknown'}
-- Age: ${playerStats.age || 0}
-- Health: ${playerStats.health || 100}
-- Weapon: ${playerStats.weapon || 'None'}
-- Inventory: ${playerStats.inventory || 'Empty'}
-- Training Score: ${playerStats.trainingScore || 0}
-- Sponsor Points: ${playerStats.sponsorPoints || 0} (hidden from player)
-
-Story Context: ${storyContext || 'You are in the Hunger Games arena. The Games have begun and you must survive. Other tributes are hunting you, and you need to find food, water, and shelter while avoiding danger.'}
-
-Write a 2-3 sentence response describing what happens when the player tries this action. Make it immersive, dramatic, and appropriate for the Hunger Games setting. The response should be engaging and move the story forward. Keep it concise but impactful.`;
-
-        console.log('Sending request to OpenAI...');
-        const completion = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
-            messages: [{ role: "user", content: prompt }],
-            max_tokens: 150,
-            temperature: 0.8
-        });
-
-        const response = completion.choices[0].message.content.trim();
-        res.json({ response });
-
-    } catch (error) {
-        console.error('GPT API error:', error);
-        
-        // Fallback response on error
-        const fallbackResponse = `You ${action.toLowerCase()}, but something unexpected happens in the arena. The Games are full of surprises, and you must adapt quickly to survive.`;
-        
-        res.status(500).json({ 
-            error: 'Failed to generate AI response',
-            response: fallbackResponse
-        });
-    }
+    try{
+        director.context(payload);
+        const user=aiIdentity(req);if(user===null)return res.status(401).json({error:'Sign in to use AI narration, or select local narration.'});
+        res.json(await arenaDirector.narrate(payload,user));
+    }catch{return res.status(400).json({error:'Invalid arena context.'});}
+});
+app.post('/api/ai/intent',async(req,res)=>{
+    if(!text(req.body.action,500))return res.status(400).json({error:'Describe an action in at most 500 characters.'});
+    try{
+        director.context(req.body);
+        const user=aiIdentity(req);if(user===null)return res.status(401).json({error:'Sign in to interpret an action with AI.'});
+        res.json(await arenaDirector.interpret(req.body,user));
+    }catch{return res.status(400).json({error:'Invalid arena context.'});}
 });
 
 // Leaderboard routes
@@ -581,4 +436,4 @@ app.use((err,req,res,next) => {
     res.status(err.status || 500).json({error:err.status === 400 ? 'Invalid JSON' : err.status === 413 ? 'Request too large' : 'Request failed'});
 });
 module.exports = {app, ready};
-if (require.main === module) ready.then(() => app.listen(PORT, () => console.log(`Server running on ${PORT}`))).catch(error => {console.error('Database initialization failed:',error.message);process.exitCode=1;});
+if (require.main === module) ready.then(() => app.listen(PORT, () => console.log(`Server running on ${PORT} · Arena AI 4`))).catch(error => {console.error('Database initialization failed:',error.message);process.exitCode=1;});

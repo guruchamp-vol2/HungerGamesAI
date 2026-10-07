@@ -138,3 +138,9 @@ The game is fully responsive and works great on:
 The old client assigned `current_action` without declaring it in the Ink story. That exception left stale choice buttons visible, causing later clicks to fail with “choice out of range.” The story now declares the compatibility variable, and the current client validates that a clicked choice still belongs to the current story scene.
 
 Deploy the latest `main` commit using `npm ci --include=dev && npm run build` so the Ink compiler is available even when `NODE_ENV=production`. The blueprint uses that command. HTML, JavaScript, and story JSON are served without caching; the game scripts also use a new asset version. If the Render service has an older manually configured build command, update it in Render and deploy the latest commit. A browser tab already running the old client needs to be reloaded.
+
+## AI director configuration
+
+Set `OPENAI_API_KEY` in the Render service's secure environment settings to enable hosted narration and natural-language interpretation. Optionally set `OPENAI_MODEL` to a model supporting strict JSON-schema Chat Completions; the default is `gpt-4.1-mini`. Users must sign in before enabling paid AI calls. Local narration and the survival coach work without a provider key. Do not place provider credentials in public files.
+
+Check `/api/version` for `arena-ai-4` and the deployed commit. Check `/api/ai/status` for `available: true` when a key is present; this reports configuration presence, not a successful provider connectivity check. The game falls back to local narration if the provider is unavailable. Existing manually configured Render services may need a manual deployment of `main`; changing the blueprint file alone does not update their service settings.

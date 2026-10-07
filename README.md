@@ -29,8 +29,24 @@ The device record tracks completed runs, victories, best survival day, and five 
 
 Local checkpoints work without signing in. Resume restores the Ink opening, arena seed and random state, supplies, opponents, objectives, and journal. JSON export/import provides portable backups; the story transcript can also be exported as text. Accounts add named cloud saves with overwrite, loading, and deletion. Save ownership is checked on every read and write.
 
-The old story checkpoint format remains readable; an old checkpoint at the arena entrance starts the new survival engine. Optional AI narration adds prose after a locally resolved action and does not change arena outcomes. It requires a signed-in account and a configured `OPENAI_API_KEY`; local play works without a key. External AI and email delivery were not exercised in the cloud validation.
+The old story checkpoint format remains readable; an old checkpoint at the arena entrance starts the new survival engine. Optional AI narration adds prose after a locally resolved action and does not change arena outcomes. It requires a signed-in account and a configured `OPENAI_API_KEY`; local play works without a key. Provider behavior is tested with simulated responses and outages; real paid AI calls and email delivery were not exercised in cloud validation.
 
 ## Validation and safeguards
 
-`npm test` runs 18 tests for authentication/save ownership, private feedback, signed-in community submissions, Ink compilation and paths, deterministic arena recovery, crafting costs, invalid actions, zero-health behavior, visibility, and run records. Public password-reset and feedback-list routes are disabled. JWT keys use `JWT_SECRET` when provided or a generated private file, with no published default account. Player requests and generated narration are not logged in full.
+`npm test` runs 33 tests for authentication/save ownership, private feedback, signed-in community submissions, Ink compilation and paths, deterministic arena recovery, crafting costs, invalid actions, zero-health behavior, visibility, and run records. Public password-reset and feedback-list routes are disabled. JWT keys use `JWT_SECRET` when provided or a generated private file, with no published default account. Player requests and generated narration are not logged in full.
+
+## Arena director overhaul
+
+The story director now receives the resolved action, current arena state, training attributes, visible nearby tributes, inventory, weather, and six recent story memories. Hidden map tiles and distant opponent locations are excluded from the provider context. Narration never changes health, supplies, random state, or the outcome of a completed action.
+
+Choose Cinematic, Tactical, or Brief narration, or turn narration off. The local director works immediately without an account or API key. Signed-in players can enable AI narration when the server is configured; provider outages, malformed responses, and quota limits fall back to local narration. Narration style and enable/disable preferences persist on the device. Recent story memory travels with checkpoints and cloud saves.
+
+The survival coach proposes up to three commands based on visible threats and resource priorities, with risk labels and explanations. Natural-language phrases such as “build a tent,” “fill my flask with water,” and “head north quietly” map to existing commands. Unknown phrases can use AI interpretation when enabled. Interpreted commands require confirmation and do not consume an action until confirmed. AI cannot add arbitrary commands or make unsupported mechanics happen.
+
+For hosted AI, set `OPENAI_API_KEY` securely in Render. `OPENAI_MODEL` is optional and defaults to `gpt-4.1-mini`; the chosen model must support strict JSON-schema responses through Chat Completions. Paid calls require sign-in and are bounded to 12 requests per minute per account, one request at a time, and a 12-second provider timeout. Quotas are per server process. No client-side key is required or sent to the browser.
+
+`GET /api/ai/status` reports provider availability without exposing credentials. `GET /api/version` identifies this client/server release as `arena-ai-4` and reports `RENDER_GIT_COMMIT` when available. The page footer also shows “Arena AI 4.”
+
+### If an older choice error keeps appearing
+
+Logs containing `[DEEP DEBUG]`, `main.js:777`, or `ink.js?v=2.3.2` come from the older client. The current client uses guarded buttons and a different asset version. In Render, select the HungerGamesAI service, verify it uses this repository's `main` branch, and use **Manual Deploy → Deploy latest commit**. The build command is `npm ci --include=dev && npm run build`; the start command is `npm start`. Then reload the game. Preserve a checkpoint or cloud save before clearing browser storage.

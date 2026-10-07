@@ -16,7 +16,7 @@ function restoreTranscript(lines){$('storyContainer').replaceChildren();for(cons
 function activateTab(id){document.querySelectorAll('.game-tab').forEach(tab=>{tab.classList.toggle('active',tab.dataset.panel===id);tab.setAttribute('aria-selected',String(tab.dataset.panel===id));});document.querySelectorAll('.game-panel').forEach(panel=>panel.classList.toggle('active',panel.id===id));}
 document.querySelectorAll('.game-tab').forEach(tab=>tab.onclick=()=>activateTab(tab.dataset.panel));
 async function api(route,body,method=body===undefined?'GET':'POST'){
-  const response=await fetch(route,{method,headers:{'Content-Type':'application/json',...(authToken?{Authorization:'Bearer '+authToken}:{})},body:body===undefined?undefined:JSON.stringify(body)});
+  const response=await fetch(route,{method,headers:{'Content-Type':'application/json',...(authToken?{Authorization:'Bearer '+authToken}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:route.startsWith('/api/ai/') || route==='/api/free-roam'?AbortSignal.timeout(16000):undefined});
   const data=await response.json();if(!response.ok)throw Error(data.error || 'The request failed.');return data;
 }
 async function checkAuthentication(){
@@ -25,10 +25,10 @@ async function checkAuthentication(){
   $('authLink').textContent=currentUser.id==='guest'?'Sign in':'Sign out';
   $('authLink').onclick=event=>{if(currentUser.id!=='guest'){event.preventDefault();logout();}};
 }
-function logout(){storage.removeItem('authToken');storage.removeItem('currentUser');authToken=null;currentUser={id:'guest',username:'Guest Player'};checkAuthentication();loadUserSaves();notice('Signed out. Your local checkpoint is still available.');}
+function logout(){storage.removeItem('authToken');storage.removeItem('currentUser');authToken=null;currentUser={id:'guest',username:'Guest Player'};checkAuthentication();$('aiNarration').checked=false;checkDirector();loadUserSaves();notice('Signed out. Your local checkpoint is still available.');}
 async function loadStory(){
   $('storyContainer').replaceChildren();$('choices').replaceChildren();notice('');
-  try{const response=await fetch('/story.json?v=arena-3',{cache:'no-store'});if(!response.ok)throw Error('Story file unavailable');const data=await response.json();storyContent=data;story=new inkjs.Story(data);continueStory();}
+  try{const response=await fetch('/story.json?v=arena-ai-4',{cache:'no-store'});if(!response.ok)throw Error('Story file unavailable');const data=await response.json();storyContent=data;story=new inkjs.Story(data);continueStory();}
   catch(error){story=null;appendStory('The story could not load. Check your connection and try again.','warning');const retry=element('button','Retry','primary');retry.onclick=loadStory;$('choices').append(retry);notice(error.message);}
 }
 function continueStory(){
@@ -74,24 +74,67 @@ function syncStory(){
   const s=gameExtras.survival;if(!s || !story)return;
   for(const [key,value] of Object.entries({player_health:s.health,player_energy:s.energy,player_dead:s.status==='lost',days_survived:s.day-1,tributes_remaining:s.enemies.filter(e=>e.health>0).length+(s.status==='lost'?0:1),sponsor_points:s.sponsorPoints,player_inventory:Object.entries(s.inventory).filter(([,v])=>v>0).map(([k,v])=>k+' ×'+v).join(', '),player_weapon:s.weapon}))if(story.variablesState[key]!==undefined)story.variablesState[key]=value;
 }
+function directorPayload(action,events=[]){
+  return {action,state:gameExtras.survival,character:charData,events,style:$('narrationStyle').value,
+    memory:Array.isArray(gameExtras.directorMemory)?gameExtras.directorMemory.slice(-6):[],mode:$('aiNarration').checked?'ai':'local'};
+}
+let proposedAction=null;
+function clearProposal(){proposedAction=null;$('intentPreview').hidden=true;}
+function proposeAction(action){
+  proposedAction={action,turn:gameExtras.survival.turn,runId:gameExtras.survival.runId};
+  $('intentText').textContent='Try this as “'+action+'”? This will use one arena action if it succeeds.';
+  $('intentPreview').hidden=false;
+}
+function rememberNarration(action,response){
+  gameExtras.directorMemory=[...(Array.isArray(gameExtras.directorMemory)?gameExtras.directorMemory:[]),action+': '+response].slice(-6).map(value=>String(value).slice(0,450));
+}
+function renderCoach(){
+  const list=$('coachSuggestions');list.replaceChildren();
+  $('directorMemory').textContent=(Array.isArray(gameExtras.directorMemory)?gameExtras.directorMemory:[]).length+' recent scenes remembered';
+  $('directorSource').textContent=gameExtras.directorSource==='ai'?'AI director':'Local director';
+  if(!gameExtras.survival){list.append(element('p','Your survival coach becomes available after training.','muted'));return;}
+  const suggestions=ArenaDirector.suggest(gameExtras.survival);
+  if(!suggestions.length){list.append(element('p','This run is complete. Begin a new tribute to return to the arena.','muted'));return;}
+  for(const idea of suggestions){const card=element('article',null,'coach-card');const heading=element('div',null,'coach-heading');heading.append(element('strong',idea.label),element('small',idea.risk+' risk','risk '+idea.risk));card.append(heading,element('p',idea.reason,'muted'));const button=element('button','Choose: '+idea.action,'secondary');button.disabled=busy;button.onclick=()=>handleFreeRoamAction(idea.action);card.append(button);list.append(card);}
+  $('directorMemory').textContent=(Array.isArray(gameExtras.directorMemory)?gameExtras.directorMemory:[]).length+' recent scenes remembered';
+}
 async function handleFreeRoamAction(action){
-  if(busy || !story || !gameExtras.survival)return;
+  if(busy || !story || gameExtras.survival?.status!=='active')return;
   if(typeof action!=='string' || !action.trim() || action.length>500)return;
-  busy=true;renderControls();appendStory('> '+action,'player-action');
+  clearProposal();busy=true;renderControls();renderCoach();
   try{
+    if(!SurvivalEngine.parse(action)){
+      let interpreted=ArenaDirector.interpret(action);
+      if(!interpreted && $('aiNarration').checked && currentUser.id!=='guest'){
+        $('typingIndicator').hidden=false;
+        try{const result=await api('/api/ai/intent',directorPayload(action));interpreted=result.action;}catch{notice('AI interpretation is unavailable. Try a direction, search, rest, or craft shelter.');}
+      }
+      if(interpreted){proposeAction(interpreted);return;}
+      notice('That action has no arena command yet. Try a direction, search, gather wood, rest, hide, or one of the coach suggestions.');return;
+    }
+    appendStory('> '+action,'player-action');
     const result=SurvivalEngine.act(gameExtras.survival,action);gameExtras.survival=result.state;
     for(const event of result.events)appendStory(event,result.state.status==='active'?'narration':'ending');
-    if(result.consumed && $('aiNarration').checked && currentUser.id!=='guest'){
-      $('typingIndicator').hidden=false;
-      try{const data=await api('/api/free-roam',{action,playerStats:{...charData,health:result.state.health},storyContext:result.events.join(' ').slice(0,3500)});appendStory(data.response,'ai-narration');}
-      catch{appendStory('Optional AI narration is unavailable. The arena continues locally.','system');}
+    syncStory();updateCharacterStats();
+    if(result.consumed && $('narrationEnabled').checked){
+      const payload=directorPayload(action,result.events),ctx=ArenaDirector.context(payload);
+      let narration={response:ArenaDirector.localNarration(ctx),source:'local'};
+      if($('aiNarration').checked && currentUser.id!=='guest'){
+        $('typingIndicator').hidden=false;
+        try{narration=await api('/api/free-roam',payload);}catch{notice('AI narration is unavailable. The local director is continuing your story.');}
+      }
+      if(narration.source!=='local' || payload.style!=='brief')appendStory(narration.response,'ai-narration');
+      rememberNarration(action,narration.response);gameExtras.directorSource=narration.source;
+      $('directorSource').textContent=narration.source==='ai'?'AI director':'Local director';
+      if(narration.reason==='rate_limited')notice('The director is taking a short break. Local narration continues.');
+      else if(narration.reason==='provider_unavailable')notice('AI is temporarily unavailable. Local narration continues.');
     }
-    syncStory();renderArena();updateCharacterStats();checkpoint();
+    renderArena();checkpoint();
     if(result.state.status!=='active'){
       record=SurvivalEngine.recordRun(record,result.state);storage.setItem('hunger-record',JSON.stringify(record));renderRecord();
       if(result.state.status==='won' && !gameExtras.resultSubmitted && currentUser.id!=='guest'){gameExtras.resultSubmitted=true;await submitLeaderboardEntry('normal');checkpoint();}
     }
-  }finally{busy=false;$('typingIndicator').hidden=true;renderArena();}
+  }finally{busy=false;$('typingIndicator').hidden=true;renderArena();renderCoach();}
 }
 const charData={};
 function updateCharacterStats(){
@@ -103,6 +146,7 @@ function updateCharacterStats(){
 }
 function renderControls(){const active=gameExtras.survival?.status==='active';$('cmdInput').disabled=busy || !active;$('sendAction').disabled=busy || !active;document.querySelectorAll('[data-action]').forEach(button=>button.disabled=busy || !active);}
 function renderArena(){
+  renderCoach();
   const s=gameExtras.survival;if(!s){$('arenaMap').textContent='Your arena map appears after training.';renderControls();return;}
   const tile=SurvivalEngine.tileAt(s);
   $('dayValue').textContent='Day '+s.day;$('turnValue').textContent='Action '+s.turn;$('weatherValue').textContent=s.weather;
@@ -143,6 +187,8 @@ function snapshot(){
 }
 function checkpoint(){if(!story?.state?.ToJson)return;const saved=snapshot();saved.elapsed=Date.now()-gameStartTime;const ok=storage.setItem('hunger-checkpoint',JSON.stringify(saved));$('checkpointStatus').textContent=ok?'Checkpoint saved on this device':'Storage unavailable · export a backup';}
 function restore(value){
+  if(busy)throw Error('Wait for the current action to finish before loading a run.');
+  clearProposal();
   if(!value || typeof value.storyState!=='string' || value.storyState.length>400000)throw Error('This save is not readable.');
   const data=value.characterData || value;
   const survival=data.survival || data.extras?.survival;
@@ -162,8 +208,9 @@ function renderRestored(){
 }
 function resumeCheckpoint(){try{const saved=JSON.parse(storage.getItem('hunger-checkpoint'));if(!saved)throw Error('No local checkpoint is available.');restore(saved);}catch(error){notice(error.message);}}
 async function newGame(){
+  if(busy){notice('Wait for the current action to finish before starting a new tribute.');return;}
   if(story && !confirm('Start a new tribute? Export your current run first if you want to keep it.'))return;
-  gameExtras={};currentSaveId=null;currentSaveName='';gameStartTime=Date.now();$('difficulty').disabled=false;$('runSeed').disabled=false;$('endingBanner').hidden=true;$('saveName').value='';await loadStory();renderArena();checkpoint();
+  clearProposal();gameExtras={};currentSaveId=null;currentSaveName='';gameStartTime=Date.now();$('difficulty').disabled=false;$('runSeed').disabled=false;$('endingBanner').hidden=true;$('saveName').value='';await loadStory();renderArena();checkpoint();
 }
 async function saveGame(){
   if(!story)return;
@@ -200,6 +247,18 @@ async function submitLeaderboardEntry(type){
 }
 function exportRun(){if(!story)return;const blob=new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=element('a');link.href=url;link.download='hunger-run-'+(gameExtras.survival?.initialSeed || 'story')+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function exportJournal(){const blob=new Blob([transcript().join('\n\n')],{type:'text/plain'});const url=URL.createObjectURL(blob);const link=element('a');link.href=url;link.download='tribute-journal.txt';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+$('confirmIntent').onclick=()=>{const proposal=proposedAction;clearProposal();if(proposal && proposal.turn===gameExtras.survival?.turn && proposal.runId===gameExtras.survival?.runId)handleFreeRoamAction(proposal.action);};
+$('cancelIntent').onclick=clearProposal;
+$('refreshCoach').onclick=renderCoach;
+$('narrationStyle').onchange=()=>{storage.setItem('hunger-narration-style',$('narrationStyle').value);};
+$('narrationEnabled').onchange=()=>{storage.setItem('hunger-narration-enabled',String($('narrationEnabled').checked));};
+const savedStyle=storage.getItem('hunger-narration-style');if(ArenaDirector.STYLES.includes(savedStyle))$('narrationStyle').value=savedStyle;
+$('narrationEnabled').checked=storage.getItem('hunger-narration-enabled')!=='false';
+async function checkDirector(){
+  $('aiNarration').disabled=true;
+  try{const status=await api('/api/ai/status');const signedIn=currentUser.id!=='guest';$('aiNarration').disabled=!status.available || !signedIn;$('directorAvailability').textContent=!status.available?'Local narration is ready. AI narration is unavailable on this server.':!signedIn?'Sign in to enable AI narration. Local narration is ready.':'AI narration is available. Enable it to use the arena director.';}
+  catch{$('directorAvailability').textContent='Local narration is ready.';}
+}
 $('actionForm').onsubmit=event=>{event.preventDefault();const value=$('cmdInput').value;$('cmdInput').value='';handleFreeRoamAction(value);};
 document.querySelectorAll('[data-action]').forEach(button=>button.onclick=()=>handleFreeRoamAction(button.dataset.action));
 $('saveForm').onsubmit=event=>{event.preventDefault();saveGame();};
@@ -210,7 +269,7 @@ $('exportRun').onclick=exportRun;$('exportJournal').onclick=exportJournal;
 window.addEventListener('beforeunload',checkpoint);
 window.addEventListener('keydown',event=>{if(event.ctrlKey || event.altKey || event.metaKey || event.target.closest('input,textarea,select,button,dialog'))return;const action={ArrowUp:'north',ArrowDown:'south',ArrowLeft:'west',ArrowRight:'east'}[event.key];if(action && gameExtras.survival?.status==='active'){event.preventDefault();handleFreeRoamAction(action);}});
 (async()=>{
-  await checkAuthentication();
-  try{const response=await fetch('/story.json?v=arena-3',{cache:'no-store'});if(!response.ok)throw Error();storyContent=await response.json();}catch{notice('Story file unavailable. Retry when connected.');}
+  await checkAuthentication();checkDirector();
+  try{const response=await fetch('/story.json?v=arena-ai-4',{cache:'no-store'});if(!response.ok)throw Error();storyContent=await response.json();}catch{notice('Story file unavailable. Retry when connected.');}
   await loadStory();renderRecord();loadUserSaves();loadLeaderboardPreview();renderArena();
 })();
