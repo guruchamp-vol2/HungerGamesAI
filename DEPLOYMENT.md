@@ -30,7 +30,7 @@
 4. **Configure the service:**
    - **Name:** `hunger-games-ai` (or your preferred name)
    - **Environment:** `Node`
-   - **Build Command:** `npm ci && npm run build`
+   - **Build Command:** `npm ci --include=dev && npm run build`
    - **Start Command:** `npm start`
    - **Plan:** Free (or paid if you prefer)
 
@@ -96,7 +96,7 @@
 
 - Check Render logs in the dashboard
 - Verify all files are committed to GitHub
-- Test locally first: `npm ci && npm run build && npm start`
+- Test locally first: `npm ci --include=dev && npm run build && npm start`
 
 ## 🎯 Features
 
@@ -132,3 +132,9 @@ The game is fully responsive and works great on:
 ---
 
 **Happy Gaming! May the odds be ever in your favor! 🏆**
+
+## Recovering the arena-entry choice error
+
+The old client assigned `current_action` without declaring it in the Ink story. That exception left stale choice buttons visible, causing later clicks to fail with “choice out of range.” The story now declares the compatibility variable, and the current client validates that a clicked choice still belongs to the current story scene.
+
+Deploy the latest `main` commit using `npm ci --include=dev && npm run build` so the Ink compiler is available even when `NODE_ENV=production`. The blueprint uses that command. HTML, JavaScript, and story JSON are served without caching; the game scripts also use a new asset version. If the Render service has an older manually configured build command, update it in Render and deploy the latest commit. A browser tab already running the old client needs to be reloaded.

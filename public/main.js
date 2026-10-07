@@ -28,7 +28,7 @@ async function checkAuthentication(){
 function logout(){storage.removeItem('authToken');storage.removeItem('currentUser');authToken=null;currentUser={id:'guest',username:'Guest Player'};checkAuthentication();loadUserSaves();notice('Signed out. Your local checkpoint is still available.');}
 async function loadStory(){
   $('storyContainer').replaceChildren();$('choices').replaceChildren();notice('');
-  try{const response=await fetch('/story.json');if(!response.ok)throw Error('Story file unavailable');const data=await response.json();storyContent=data;story=new inkjs.Story(data);continueStory();}
+  try{const response=await fetch('/story.json?v=arena-3',{cache:'no-store'});if(!response.ok)throw Error('Story file unavailable');const data=await response.json();storyContent=data;story=new inkjs.Story(data);continueStory();}
   catch(error){story=null;appendStory('The story could not load. Check your connection and try again.','warning');const retry=element('button','Retry','primary');retry.onclick=loadStory;$('choices').append(retry);notice(error.message);}
 }
 function continueStory(){
@@ -40,12 +40,20 @@ function continueStory(){
 }
 function displayChoices(){
   $('choices').replaceChildren();
+  const activeStory=story;
   for(const [index,choice] of (story?.currentChoices || []).entries()){
     const button=element('button',choice.text,'choice');
     button.onclick=()=>{
-      let name=null;
-      if(/enter your name/i.test(choice.text)){name=prompt('Tribute name:',currentUser.id==='guest'?'Tribute':currentUser.username);if(name===null)return;name=name.trim().slice(0,32)||'Tribute';}
-      story.ChooseChoiceIndex(index);continueStory();if(name){story.variablesState.player_name=name;updateCharacterStats();}checkpoint();
+      // Detached buttons and queued double-clicks must not choose from a later scene.
+      if(busy || story!==activeStory || story.currentChoices[index]!==choice)return;
+      busy=true;
+      $('choices').querySelectorAll('button').forEach(control=>control.disabled=true);
+      try{
+        let name=null;
+        if(/enter your name/i.test(choice.text)){name=prompt('Tribute name:',currentUser.id==='guest'?'Tribute':currentUser.username);if(name===null)return;name=name.trim().slice(0,32)||'Tribute';}
+        story.ChooseChoiceIndex(index);continueStory();if(name){story.variablesState.player_name=name;updateCharacterStats();}checkpoint();
+      }catch(error){notice('That choice could not continue. Restore your checkpoint or start a new tribute.');displayChoices();}
+      finally{busy=false;$('choices').querySelectorAll('button').forEach(control=>control.disabled=false);if(gameExtras.survival)renderArena();}
     };
     $('choices').append(button);
   }
@@ -203,6 +211,6 @@ window.addEventListener('beforeunload',checkpoint);
 window.addEventListener('keydown',event=>{if(event.ctrlKey || event.altKey || event.metaKey || event.target.closest('input,textarea,select,button,dialog'))return;const action={ArrowUp:'north',ArrowDown:'south',ArrowLeft:'west',ArrowRight:'east'}[event.key];if(action && gameExtras.survival?.status==='active'){event.preventDefault();handleFreeRoamAction(action);}});
 (async()=>{
   await checkAuthentication();
-  try{const response=await fetch('/story.json');if(!response.ok)throw Error();storyContent=await response.json();}catch{notice('Story file unavailable. Retry when connected.');}
+  try{const response=await fetch('/story.json?v=arena-3',{cache:'no-store'});if(!response.ok)throw Error();storyContent=await response.json();}catch{notice('Story file unavailable. Retry when connected.');}
   await loadStory();renderRecord();loadUserSaves();loadLeaderboardPreview();renderArena();
 })();

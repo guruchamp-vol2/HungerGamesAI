@@ -30,7 +30,11 @@ app.use(cors());
 app.disable('x-powered-by');
 app.use(express.json({ limit: '512kb' }));
 app.use((req,res,next) => { res.setHeader('X-Content-Type-Options','nosniff'); next(); });
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'),{
+    setHeaders(res,file){
+        if(/\.(?:html|js|json)$/.test(file))res.setHeader('Cache-Control','no-store');
+    }
+}));
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {

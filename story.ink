@@ -1,4 +1,6 @@
 VAR action = ""
+// Compatibility with clients that reset this field when entering the arena.
+VAR current_action = ""
 VAR player_personality = "neutral"
 VAR world_event = "none"
 VAR player_agility = 0

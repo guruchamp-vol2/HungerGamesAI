@@ -33,4 +33,4 @@ The old story checkpoint format remains readable; an old checkpoint at the arena
 
 ## Validation and safeguards
 
-`npm test` runs 17 tests for authentication/save ownership, private feedback, signed-in community submissions, Ink compilation and paths, deterministic arena recovery, crafting costs, invalid actions, zero-health behavior, visibility, and run records. Public password-reset and feedback-list routes are disabled. JWT keys use `JWT_SECRET` when provided or a generated private file, with no published default account. Player requests and generated narration are not logged in full.
+`npm test` runs 18 tests for authentication/save ownership, private feedback, signed-in community submissions, Ink compilation and paths, deterministic arena recovery, crafting costs, invalid actions, zero-health behavior, visibility, and run records. Public password-reset and feedback-list routes are disabled. JWT keys use `JWT_SECRET` when provided or a generated private file, with no published default account. Player requests and generated narration are not logged in full.
