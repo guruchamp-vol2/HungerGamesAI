@@ -4,7 +4,7 @@ An Ink story opening followed by a playable seeded survival arena. Train a tribu
 
 ## Run locally
 
-Use Node 22 or newer:
+Use Node 22.13 or newer (the deployment pins Node 22.23.3):
 
 ```sh
 npm ci
@@ -33,7 +33,7 @@ The old story checkpoint format remains readable; an old checkpoint at the arena
 
 ## Validation and safeguards
 
-`npm test` runs 33 tests for authentication/save ownership, private feedback, signed-in community submissions, Ink compilation and paths, deterministic arena recovery, crafting costs, invalid actions, zero-health behavior, visibility, and run records. Public password-reset and feedback-list routes are disabled. JWT keys use `JWT_SECRET` when provided or a generated private file, with no published default account. Player requests and generated narration are not logged in full.
+`npm test` runs 34 tests for authentication/save ownership, private feedback, signed-in community submissions, Ink compilation and paths, deterministic arena recovery, crafting costs, invalid actions, zero-health behavior, visibility, and run records. Public password-reset and feedback-list routes are disabled. JWT keys use `JWT_SECRET` when provided or a generated private file, with no published default account. Player requests and generated narration are not logged in full.
 
 ## Arena director overhaul
 
@@ -50,3 +50,7 @@ For hosted AI, set `OPENAI_API_KEY` securely in Render. `OPENAI_MODEL` is option
 ### If an older choice error keeps appearing
 
 Logs containing `[DEEP DEBUG]`, `main.js:777`, or `ink.js?v=2.3.2` come from the older client. The current client uses guarded buttons and a different asset version. In Render, select the HungerGamesAI service, verify it uses this repository's `main` branch, and use **Manual Deploy → Deploy latest commit**. The build command is `npm ci --include=dev && npm run build`; the start command is `npm start`. Then reload the game. Preserve a checkpoint or cloud save before clearing browser storage.
+
+## SQLite runtime compatibility
+
+Accounts and saves use Node's built-in `node:sqlite` driver. There is no separately downloaded SQLite native addon, so startup does not depend on an addon requiring `GLIBC_2.38`. Existing SQLite databases keep their schema, user IDs, password hashes, and saved runs. Save/statistics deletion uses a transaction. `.node-version` and the Render blueprint pin Node 22.23.3; `package.json` requires at least Node 22.13.

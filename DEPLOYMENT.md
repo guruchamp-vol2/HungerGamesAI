@@ -144,3 +144,9 @@ Deploy the latest `main` commit using `npm ci --include=dev && npm run build` so
 Set `OPENAI_API_KEY` in the Render service's secure environment settings to enable hosted narration and natural-language interpretation. Optionally set `OPENAI_MODEL` to a model supporting strict JSON-schema Chat Completions; the default is `gpt-4.1-mini`. Users must sign in before enabling paid AI calls. Local narration and the survival coach work without a provider key. Do not place provider credentials in public files.
 
 Check `/api/version` for `arena-ai-4` and the deployed commit. Check `/api/ai/status` for `available: true` when a key is present; this reports configuration presence, not a successful provider connectivity check. The game falls back to local narration if the provider is unavailable. Existing manually configured Render services may need a manual deployment of `main`; changing the blueprint file alone does not update their service settings.
+
+## Startup failure: GLIBC_2.38 not found
+
+The former third-party `sqlite3` binary required a Linux library unavailable on the Render runtime. The application now uses Node's built-in SQLite, preserving the existing SQLite file and removing that external binary dependency. Node 22.23.3 is pinned in `.node-version` and the blueprint. An existing Render `NODE_VERSION` environment override takes precedence; set it to `22.23.3` for the tested runtime.
+
+Deploy the newest `main` commit with `npm ci --include=dev && npm run build` and `npm start` (or `node server.js`). If a previous deployment still fails with a `node_modules/sqlite3` stack trace, use **Manual Deploy → Clear build cache & deploy**. The new dependency tree does not contain that addon. Keep the configured persistent disk and `DB_FILE` path intact; no database deletion or account reset is needed. A successful new startup logs “Arena AI 4,” and `/api/version` returns `arena-ai-4`.

@@ -24,13 +24,12 @@
     "dotenv": "^17.2.0",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^10.0.15",
-    "sqlite3": "^6.0.1"
+    "nodemailer": "^10.0.15"
   },
   "devDependencies": {
     "inkjs": "^2.4.0"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13.0"
   }
 }
